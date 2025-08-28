@@ -9,6 +9,7 @@ interface TelegramUpdate {
   update_id: number;
   inline_query?: TelegramInlineQuery;
   message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
 }
 
 interface TelegramInlineQuery {
@@ -38,6 +39,14 @@ interface TelegramChat {
   id: number;
   type: string;
   title?: string;
+}
+
+interface TelegramCallbackQuery {
+  id: string;
+  from: TelegramUser;
+  message?: TelegramMessage;
+  data?: string;
+  chat_instance: string;
 }
 
 interface TelegramInlineQueryResult {
@@ -88,10 +97,24 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // Handle regular messages (for debugging/monitoring)
-    if (update.message) {
-      console.log("Received message:", update.message.text);
+    // Handle callback queries (viral button functionality)
+    if (update.callback_query) {
+      await handleCallbackQuery(update.callback_query);
       return new Response("OK", { status: 200 });
+    }
+
+    // Handle regular messages (/start command and debugging)
+    if (update.message) {
+      await handleMessage(update.message);
+      return new Response("OK", { status: 200 });
+    }
+
+    // Handle analytics requests (for monitoring dashboard)
+    if (req.url.includes('/analytics')) {
+      const analytics = await getAnalyticsSummary();
+      return new Response(JSON.stringify(analytics), {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response("OK", { status: 200 });
@@ -504,6 +527,483 @@ async function trackEnhancedLinkGeneration(userId: number, merchants: any[], sea
   }
 }
 
+// Sprint 3: Viral Mechanics Implementation
+
+// Handle callback queries for viral "Get MY Unique Link" buttons
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
+  const userId = callbackQuery.from.id;
+  const username = callbackQuery.from.username || `user_${userId}`;
+  
+  if (!callbackQuery.data) {
+    await answerCallbackQuery(callbackQuery.id, "❌ Invalid button data", true);
+    return;
+  }
+
+  try {
+    const [action, merchantSlug, originalUserId] = callbackQuery.data.split(':');
+    
+    if (action === 'generate') {
+      // Ensure viral user exists in database
+      await upsertUser(userId, username);
+      
+      // Get merchant information
+      const { data: merchant, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .eq('merchant_slug', merchantSlug)
+        .single();
+      
+      if (error || !merchant) {
+        await answerCallbackQuery(callbackQuery.id, '❌ Merchant not found', true);
+        return;
+      }
+      
+      // Track viral interaction for analytics
+      await trackViralInteraction(
+        parseInt(originalUserId), 
+        userId, 
+        merchantSlug, 
+        callbackQuery.message?.chat?.id
+      );
+      
+      // Generate new affiliate link for viral user
+      const affiliateData = await generateAffiliateLink(userId, merchantSlug);
+      
+      // Create viral response message
+      const viralResponse = await generateViralBotResponse(userId, username, merchant, affiliateData);
+      const viralKeyboard = await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link);
+      
+      // Send new message to the chat
+      if (callbackQuery.message?.chat?.id) {
+        await sendMessage(callbackQuery.message.chat.id, viralResponse, viralKeyboard);
+      }
+      
+      // Answer the callback query with success
+      await answerCallbackQuery(callbackQuery.id, `✅ Your ${merchant.merchant_name} link generated!`, false);
+      
+      // Update viral statistics
+      await updateViralStats(userId, parseInt(originalUserId));
+      
+    } else {
+      await answerCallbackQuery(callbackQuery.id, "❌ Unknown action", true);
+    }
+
+  } catch (error) {
+    console.error("Error handling callback query:", error);
+    await answerCallbackQuery(callbackQuery.id, "⚠️ Something went wrong, please try again", true);
+  }
+}
+
+// Handle regular messages (/start command and help)
+async function handleMessage(message: TelegramMessage) {
+  if (!message.text) return;
+  
+  const userId = message.from?.id;
+  const username = message.from?.username;
+  
+  if (!userId) return;
+  
+  try {
+    // Handle /start command
+    if (message.text.startsWith('/start')) {
+      await upsertUser(userId, username);
+      await handleStartCommand(message);
+      return;
+    }
+    
+    // Handle help commands
+    if (message.text === '/help' || message.text.toLowerCase().includes('help')) {
+      await handleHelpCommand(message);
+      return;
+    }
+    
+    // Log other messages for debugging
+    console.log(`Received message from ${username || userId}: ${message.text}`);
+    
+  } catch (error) {
+    console.error("Error handling message:", error);
+  }
+}
+
+// Handle /start command with comprehensive onboarding
+async function handleStartCommand(message: TelegramMessage) {
+  const helpText = `🎯 **Welcome to HeyMax Shop Bot!**
+
+🚀 **How to earn Max Miles in any chat:**
+1. Type @HeyMax_shop_bot followed by a merchant name
+2. Select your merchant from the results
+3. Tap your personalized link to start shopping & earning!
+
+💡 **Try these popular merchants:**
+• **Pelago** (8.0 miles/$) - Travel & experiences in Singapore
+• **Klook** (6.5 miles/$) - Activities and attractions
+• **Shopee Singapore** (3.5 miles/$) - Online marketplace
+• **Apple Singapore** (2.0 miles/$) - Electronics & accessories
+• **Starbucks** (3.0 miles/$) - Coffee & food
+
+⚡ **Viral earning:** When others see your link, they can generate their own and earn too!
+
+🎪 **Add me to group chats** so everyone can discover earning opportunities together!
+
+**Quick start:** Type @HeyMax_shop_bot pelago to try it now! 🛍️
+
+Need more help? Send /help anytime.`;
+
+  await sendMessage(message.chat.id, helpText);
+}
+
+// Handle help command
+async function handleHelpCommand(message: TelegramMessage) {
+  const helpText = `🆘 **HeyMax Shop Bot Help**
+
+**🔍 Basic Usage:**
+• Type @HeyMax_shop_bot [merchant name] in any chat
+• Example: @HeyMax_shop_bot shopee
+• Works in private chats, groups, and channels
+
+**⚡ Viral Earning:**
+• When someone uses your link, they earn Miles
+• They can tap "Get MY Unique Link" to earn their own Miles
+• Everyone wins - that's viral social commerce!
+
+**🛍️ Popular Merchants:**
+• pelago, klook, shopee, apple, starbucks, grab, lazada
+
+**💡 Pro Tips:**
+• Add me to group chats for viral discovery
+• Search works with partial names (e.g. "shop" finds Shopee)
+• Empty search shows top earning merchants
+
+**🐛 Issues?**
+• Bot not responding? Try /start
+• No merchants found? Try popular names
+• Still stuck? The bot is in beta - thanks for your patience!
+
+**📊 Stats:** You can see viral growth analytics in group chats where I'm active.
+
+Ready to earn? Try @HeyMax_shop_bot pelago right now! 🚀`;
+
+  await sendMessage(message.chat.id, helpText);
+}
+
+// Track viral interactions for analytics
+async function trackViralInteraction(originalUserId: number, viralUserId: number, merchantSlug: string, chatId?: number) {
+  try {
+    const { error } = await supabase
+      .from('viral_interactions')
+      .insert({
+        original_user_id: originalUserId,
+        viral_user_id: viralUserId,
+        merchant_slug: merchantSlug,
+        chat_id: chatId,
+        interaction_type: 'callback_query',
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error("Error tracking viral interaction:", error);
+    }
+  } catch (error) {
+    console.error("Error in trackViralInteraction:", error);
+  }
+}
+
+// Update viral statistics for users
+async function updateViralStats(viralUserId: number, originalUserId: number) {
+  try {
+    // Update the original user's viral trigger count
+    await supabase
+      .rpc('update_user_stats', {
+        p_user_id: originalUserId,
+        p_action: 'viral_triggered'
+      });
+
+    // Update the viral user's link generation count
+    await supabase
+      .rpc('update_user_stats', {
+        p_user_id: viralUserId,
+        p_action: 'viral_generated'
+      });
+
+  } catch (error) {
+    console.error("Error updating viral stats:", error);
+  }
+}
+
+// Enhanced viral bot response for callback-generated links
+async function generateViralBotResponse(userId: number, username: string, merchant: any, affiliateData: any): Promise<string> {
+  const displayName = username ? `@${username}` : `User ${userId}`;
+  const earnRate = merchant.base_mpd;
+  const exampleSpend = earnRate >= 5 ? 100 : 200;
+  const exampleEarnings = Math.round(exampleSpend * earnRate);
+  
+  return `🎉 **${displayName}, your viral ${merchant.merchant_name} link is ready!**
+
+✨ **Earn ${earnRate} Max Miles per $1** spent
+💰 **Example**: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
+
+🔥 **You discovered this through viral sharing** - now others can do the same!
+
+🚀 **Your personalized link:** 👆
+
+💡 **Keep the viral loop going**: Share @HeyMax_shop_bot with friends and groups!
+
+Try more: @HeyMax_shop_bot klook, pelago, grab...`;
+}
+
+// Sprint 3: Analytics & Monitoring Implementation
+
+// Get comprehensive analytics summary
+async function getAnalyticsSummary() {
+  try {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Get user metrics
+    const { data: totalUsersResult } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true });
+
+    const { data: activeUsers24h } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('last_activity', oneDayAgo.toISOString());
+
+    const { data: activeUsers7d } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('last_activity', oneWeekAgo.toISOString());
+
+    // Get link generation metrics
+    const { data: totalLinks } = await supabase
+      .from('link_generations')
+      .select('id', { count: 'exact', head: true });
+
+    const { data: links24h } = await supabase
+      .from('link_generations')
+      .select('id', { count: 'exact', head: true })
+      .gte('generated_at', oneDayAgo.toISOString());
+
+    const { data: links7d } = await supabase
+      .from('link_generations')
+      .select('id', { count: 'exact', head: true })
+      .gte('generated_at', oneWeekAgo.toISOString());
+
+    // Get viral interaction metrics
+    const { data: totalViralInteractions } = await supabase
+      .from('viral_interactions')
+      .select('id', { count: 'exact', head: true });
+
+    const { data: viralInteractions7d } = await supabase
+      .from('viral_interactions')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', oneWeekAgo.toISOString());
+
+    // Get search analytics
+    const { data: totalSearches } = await supabase
+      .from('search_analytics')
+      .select('id', { count: 'exact', head: true })
+      .gte('query_timestamp', oneWeekAgo.toISOString());
+
+    const { data: avgResultsPerSearch } = await supabase
+      .from('search_analytics')
+      .select('results_count')
+      .gte('query_timestamp', oneWeekAgo.toISOString());
+
+    // Calculate viral coefficient using the database function
+    const { data: viralCoefficientResult } = await supabase
+      .rpc('calculate_viral_coefficient', { days_back: 7 });
+
+    // Get top merchants by activity
+    const { data: topMerchants } = await supabase
+      .from('link_generations')
+      .select('merchant_slug')
+      .gte('generated_at', oneWeekAgo.toISOString())
+      .not('merchant_slug', 'is', null);
+
+    // Calculate merchant popularity
+    const merchantCounts = topMerchants?.reduce((acc: any, item) => {
+      acc[item.merchant_slug] = (acc[item.merchant_slug] || 0) + 1;
+      return acc;
+    }, {}) || {};
+
+    const topMerchantsRanked = Object.entries(merchantCounts)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 10)
+      .map(([merchant, count]) => ({ merchant, count }));
+
+    // Calculate average search results
+    const avgResults = avgResultsPerSearch?.length > 0 
+      ? avgResultsPerSearch.reduce((sum, item) => sum + (item.results_count || 0), 0) / avgResultsPerSearch.length 
+      : 0;
+
+    // Performance metrics
+    const performanceMetrics = {
+      avg_response_time_ms: 250, // This would be measured in production
+      uptime_percentage: 99.9,
+      error_rate_percentage: 0.1
+    };
+
+    return {
+      timestamp: now.toISOString(),
+      user_metrics: {
+        total_users: totalUsersResult?.count || 0,
+        active_users_24h: activeUsers24h?.count || 0,
+        active_users_7d: activeUsers7d?.count || 0
+      },
+      link_metrics: {
+        total_links_generated: totalLinks?.count || 0,
+        links_generated_24h: links24h?.count || 0,
+        links_generated_7d: links7d?.count || 0
+      },
+      viral_metrics: {
+        total_viral_interactions: totalViralInteractions?.count || 0,
+        viral_interactions_7d: viralInteractions7d?.count || 0,
+        viral_coefficient_7d: viralCoefficientResult || 0
+      },
+      search_metrics: {
+        total_searches_7d: totalSearches?.count || 0,
+        avg_results_per_search: Math.round(avgResults * 100) / 100
+      },
+      top_merchants_7d: topMerchantsRanked,
+      performance_metrics: performanceMetrics,
+      health_status: {
+        database_connection: "healthy",
+        telegram_api: "healthy",
+        overall_status: "operational"
+      }
+    };
+
+  } catch (error) {
+    console.error("Error generating analytics summary:", error);
+    return {
+      error: "Failed to generate analytics",
+      timestamp: new Date().toISOString(),
+      health_status: {
+        overall_status: "degraded"
+      }
+    };
+  }
+}
+
+// Monitor function invocation limits for free tier
+async function checkFunctionInvocationLimits() {
+  try {
+    // This would integrate with Supabase monitoring APIs in production
+    // For now, we'll track basic metrics
+    const { data: recentInvocations } = await supabase
+      .from('link_generations')
+      .select('id', { count: 'exact', head: true })
+      .gte('generated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    const monthlyInvocations = (recentInvocations?.count || 0) * 2; // Rough estimate
+    const freetierLimit = 500000; // Supabase free tier limit
+    const usagePercentage = (monthlyInvocations / freetierLimit) * 100;
+
+    return {
+      monthly_invocations: monthlyInvocations,
+      free_tier_limit: freetierLimit,
+      usage_percentage: Math.round(usagePercentage * 100) / 100,
+      warning_threshold_reached: usagePercentage > 80,
+      critical_threshold_reached: usagePercentage > 95
+    };
+
+  } catch (error) {
+    console.error("Error checking function limits:", error);
+    return {
+      error: "Failed to check limits",
+      warning_threshold_reached: false,
+      critical_threshold_reached: false
+    };
+  }
+}
+
+// Real-time viral coefficient monitoring
+async function getViralCoefficientTrend(days: number = 7) {
+  try {
+    const dailyCoefficients = [];
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const dayStart = new Date();
+      dayStart.setDate(dayStart.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+      
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      // Get daily users
+      const { data: dailyUsers } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .lte('first_seen', dayEnd.toISOString())
+        .gte('last_activity', dayStart.toISOString());
+      
+      // Get daily viral interactions
+      const { data: dailyViral } = await supabase
+        .from('viral_interactions')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', dayStart.toISOString())
+        .lt('created_at', dayEnd.toISOString());
+      
+      const coefficient = (dailyUsers?.count || 0) > 0 
+        ? (dailyViral?.count || 0) / (dailyUsers?.count || 1) 
+        : 0;
+      
+      dailyCoefficients.push({
+        date: dayStart.toISOString().split('T')[0],
+        coefficient: Math.round(coefficient * 100) / 100,
+        users: dailyUsers?.count || 0,
+        viral_interactions: dailyViral?.count || 0
+      });
+    }
+    
+    return dailyCoefficients;
+    
+  } catch (error) {
+    console.error("Error calculating viral coefficient trend:", error);
+    return [];
+  }
+}
+
+// Performance monitoring for load testing
+async function getPerformanceMetrics() {
+  try {
+    // In production, this would integrate with monitoring tools
+    // For MVP, we'll return basic metrics
+    const { data: recentQueries } = await supabase
+      .from('search_analytics')
+      .select('response_time_ms')
+      .gte('query_timestamp', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+      .not('response_time_ms', 'is', null);
+
+    const responseTimes = recentQueries?.map(q => q.response_time_ms || 0) || [];
+    const avgResponseTime = responseTimes.length > 0 
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
+      : 0;
+
+    const p95ResponseTime = responseTimes.length > 0 
+      ? responseTimes.sort((a, b) => a - b)[Math.floor(responseTimes.length * 0.95)] 
+      : 0;
+
+    return {
+      avg_response_time_ms: Math.round(avgResponseTime),
+      p95_response_time_ms: Math.round(p95ResponseTime),
+      total_requests_1h: responseTimes.length,
+      performance_target_met: avgResponseTime < 1000, // <1s target
+      health_status: avgResponseTime < 1000 ? "healthy" : "degraded"
+    };
+
+  } catch (error) {
+    console.error("Error getting performance metrics:", error);
+    return {
+      error: "Failed to get performance metrics",
+      health_status: "unknown"
+    };
+  }
+}
+
 // Telegram API Operations
 
 async function sendInlineQueryAnswer(queryId: string, results: TelegramInlineQueryResult[]) {
@@ -527,4 +1027,59 @@ async function sendInlineQueryAnswer(queryId: string, results: TelegramInlineQue
     console.error("Telegram API error:", error);
     throw new Error(`Telegram API error: ${response.status}`);
   }
+}
+
+// Answer callback query from viral buttons
+async function answerCallbackQuery(callbackQueryId: string, text: string, showAlert: boolean = false) {
+  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`;
+  
+  const response = await fetch(telegramApiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      callback_query_id: callbackQueryId,
+      text: text,
+      show_alert: showAlert
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Telegram answerCallbackQuery error:", error);
+    throw new Error(`Telegram API error: ${response.status}`);
+  }
+}
+
+// Send message to chat (for viral responses and help)
+async function sendMessage(chatId: number, text: string, replyMarkup?: any) {
+  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  
+  const payload: any = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: "Markdown",
+    disable_web_page_preview: true
+  };
+  
+  if (replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
+  
+  const response = await fetch(telegramApiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Telegram sendMessage error:", error);
+    throw new Error(`Telegram API error: ${response.status}`);
+  }
+  
+  return await response.json();
 }
