@@ -109,65 +109,86 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
   const searchTerm = query.query.toLowerCase().trim();
 
   try {
-    // Upsert user in database
+    // Upsert user in database with enhanced tracking
     await upsertUser(userId, username);
 
-    // Search merchants based on query
-    const merchants = await searchMerchants(searchTerm);
+    // Handle empty query - show popular merchants
+    if (!searchTerm) {
+      const results = await generatePopularMerchantResults(userId, username);
+      await sendInlineQueryAnswer(query.id, results);
+      return;
+    }
 
-    // Generate inline query results
-    const results: TelegramInlineQueryResult[] = merchants.map((merchant, index) => {
-      const personalizedLink = merchant.tracking_link.replace('{{USER_ID}}', userId.toString());
-      
-      return {
+    // Enhanced merchant search with fuzzy matching
+    const merchants = await searchMerchantsEnhanced(searchTerm);
+
+    if (merchants.length === 0) {
+      const noResultsResult: TelegramInlineQueryResult = {
         type: "article",
-        id: `${merchant.merchant_slug}_${index}`,
-        title: `🛍️ Shop ${merchant.merchant_name}`,
-        description: `Earn up to ${merchant.base_mpd} Max Miles per $1 spent`,
+        id: "no_results",
+        title: `❌ No merchants found for "${searchTerm}"`,
+        description: "Try popular brands: shopee, grab, klook, lazada, foodpanda",
         input_message_content: {
-          message_text: `🛍️ **${merchant.merchant_name}** - Earn up to **${merchant.base_mpd} Max Miles per $1** spent\n\n` +
-                       `*Exclusive link for @${username}* 👆`,
+          message_text: `🔍 No merchants found for "${searchTerm}"
+
+` +
+                       `💡 Try popular merchants: shopee, grab, klook, lazada, foodpanda
+
+` +
+                       `Type @HeyMax_shop_bot followed by a merchant name to discover earning opportunities!`,
           parse_mode: "Markdown"
-        },
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles (for @${username})`,
-                url: personalizedLink
-              }
-            ],
-            [
-              {
-                text: "⚡ Get MY Unique Link",
-                url: `https://t.me/HeyMax_shop_bot?start=${merchant.merchant_slug}`
-              }
-            ]
-          ]
-        },
-        thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+        }
       };
-    });
+      
+      await sendInlineQueryAnswer(query.id, [noResultsResult]);
+      return;
+    }
+
+    // Generate enhanced inline query results with viral mechanics
+    const results: TelegramInlineQueryResult[] = await Promise.all(
+      merchants.slice(0, 8).map(async (merchant, index) => {
+        const affiliateData = await generateAffiliateLink(userId, merchant.merchant_slug);
+        
+        return {
+          type: "article",
+          id: `${merchant.merchant_slug}_${index}`,
+          title: `🛍️ ${merchant.merchant_name}`,
+          description: `Earn ${merchant.base_mpd} Max Miles per $1 • ${Math.round(merchant.match_score * 100)}% match`,
+          input_message_content: {
+            message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
+            parse_mode: "Markdown"
+          },
+          reply_markup: await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link),
+          thumbnail_url: merchant.logo_url || "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+        };
+      })
+    );
 
     // Send results back to Telegram
     await sendInlineQueryAnswer(query.id, results);
 
-    // Track link generation for viral analytics
-    if (merchants.length > 0 && searchTerm) {
-      await trackLinkGeneration(userId, merchants[0].merchant_slug, query);
-    }
+    // Enhanced analytics tracking
+    await trackEnhancedLinkGeneration(userId, merchants, searchTerm, query);
 
   } catch (error) {
     console.error("Error handling inline query:", error);
     
-    // Send error result to user
+    // Enhanced error handling with helpful suggestions
     const errorResult: TelegramInlineQueryResult = {
       type: "article",
       id: "error",
-      title: "⚠️ Search Error",
-      description: "Try searching for a merchant name (e.g., 'shopee', 'grab', 'klook')",
+      title: "⚠️ Temporary Service Issue",
+      description: "Please try again in a moment",
       input_message_content: {
-        message_text: "⚠️ Something went wrong. Please try searching again with a merchant name like 'shopee' or 'grab'.",
+        message_text: `⚠️ We're experiencing a temporary issue
+
+` +
+                     `Please try again in a moment, or search for popular merchants like:
+` +
+                     `• shopee • grab • klook • lazada • foodpanda
+
+` +
+                     `🔧 If the issue persists, our team has been notified.`,
         parse_mode: "Markdown"
       }
     };
@@ -231,6 +252,255 @@ async function trackLinkGeneration(userId: number, merchantSlug: string, query: 
   
   if (error) {
     console.error("Error tracking link generation:", error);
+  }
+}
+
+// Enhanced Sprint 2 Functions for Core Bot Functionality
+
+// Enhanced merchant search with fuzzy matching and scoring
+async function searchMerchantsEnhanced(searchTerm: string) {
+  const { data, error } = await supabase
+    .from('merchants')
+    .select('merchant_slug, merchant_name, tracking_link, base_mpd')
+    .or(`merchant_name.ilike.%${searchTerm}%,merchant_slug.ilike.%${searchTerm}%`)
+    .order('base_mpd', { ascending: false })
+    .limit(15);
+  
+  if (error) throw error;
+  
+  // Add fuzzy match scoring
+  const merchants = (data || []).map(merchant => ({
+    ...merchant,
+    match_score: calculateMatchScore(merchant.merchant_name, searchTerm)
+  }));
+  
+  // Sort by match score, then by MPD value
+  return merchants.sort((a, b) => {
+    if (Math.abs(a.match_score - b.match_score) < 0.1) {
+      return b.base_mpd - a.base_mpd; // Higher MPD first if similar match
+    }
+    return b.match_score - a.match_score; // Higher match score first
+  });
+}
+
+// Calculate fuzzy match score for merchant search
+function calculateMatchScore(merchantName: string, searchTerm: string): number {
+  const name = merchantName.toLowerCase();
+  const term = searchTerm.toLowerCase();
+  
+  // Exact match
+  if (name === term) return 1.0;
+  
+  // Starts with search term
+  if (name.startsWith(term)) return 0.9;
+  
+  // Contains search term
+  if (name.includes(term)) return 0.8;
+  
+  // Word boundary match - split on spaces, hyphens, underscores
+  const words = name.split(/[ \-_]+/);
+  for (const word of words) {
+    if (word.startsWith(term)) return 0.7;
+    if (word.includes(term)) return 0.6;
+  }
+  
+  // Basic similarity for fuzzy matching
+  const commonChars = countCommonChars(name, term);
+  const similarity = commonChars / Math.max(name.length, term.length);
+  
+  return similarity > 0.5 ? similarity * 0.5 : 0;
+}
+
+// Count common characters between two strings
+function countCommonChars(str1: string, str2: string): number {
+  const chars1 = str1.split('').sort();
+  const chars2 = str2.split('').sort();
+  let i = 0, j = 0, common = 0;
+  
+  while (i < chars1.length && j < chars2.length) {
+    if (chars1[i] === chars2[j]) {
+      common++;
+      i++;
+      j++;
+    } else if (chars1[i] < chars2[j]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  
+  return common;
+}
+
+// Generate popular merchant results for empty queries
+async function generatePopularMerchantResults(userId: number, username: string): Promise<TelegramInlineQueryResult[]> {
+  const { data: popularMerchants, error } = await supabase
+    .from('merchants')
+    .select('merchant_slug, merchant_name, tracking_link, base_mpd')
+    .order('base_mpd', { ascending: false })
+    .limit(6);
+  
+  if (error) throw error;
+  
+  if (!popularMerchants || popularMerchants.length === 0) {
+    return [{
+      type: "article",
+      id: "help",
+      title: "🔍 Search for merchants to earn Max Miles",
+      description: "Type a merchant name after @HeyMax_shop_bot",
+      input_message_content: {
+        message_text: `🎯 Welcome to HeyMax Shop Bot!
+
+` +
+                     `💡 **How to earn Max Miles:**
+` +
+                     `Type @HeyMax_shop_bot followed by a merchant name
+
+` +
+                     `🛍️ **Popular merchants:** shopee, grab, klook, lazada, foodpanda
+
+` +
+                     `⚡ Generate personalized earning links instantly!`,
+        parse_mode: "Markdown"
+      }
+    }];
+  }
+  
+  return await Promise.all(popularMerchants.map(async (merchant, index) => {
+    const affiliateData = await generateAffiliateLink(userId, merchant.merchant_slug);
+    
+    return {
+      type: "article",
+      id: `popular_${merchant.merchant_slug}_${index}`,
+      title: `⭐ ${merchant.merchant_name}`,
+      description: `Top earner: ${merchant.base_mpd} Max Miles per $1 spent`,
+      input_message_content: {
+        message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
+        parse_mode: "Markdown"
+      },
+      reply_markup: await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link),
+      thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+    };
+  }));
+}
+
+// Enhanced affiliate link generation with UTM tracking
+async function generateAffiliateLink(userId: number, merchantSlug: string) {
+  const { data: merchant, error } = await supabase
+    .from('merchants')
+    .select('*')
+    .eq('merchant_slug', merchantSlug)
+    .single();
+
+  if (error || !merchant) {
+    throw new Error(`Merchant ${merchantSlug} not found`);
+  }
+
+  // Replace placeholder with actual user ID
+  let affiliateLink = merchant.tracking_link.replace('{{USER_ID}}', userId.toString());
+  
+  // Add comprehensive UTM parameters for tracking
+  const utmParams = new URLSearchParams({
+    utm_source: 'telegram',
+    utm_medium: 'heymax_shop_bot',
+    utm_campaign: 'viral_social_commerce',
+    utm_content: merchantSlug,
+    utm_term: `user_${userId}`,
+    heymax_ref: `telegram_${userId}`,
+    timestamp: Date.now().toString()
+  });
+  
+  // Add UTM parameters to the link
+  const separator = affiliateLink.includes('?') ? '&' : '?';
+  const finalLink = `${affiliateLink}${separator}${utmParams.toString()}`;
+
+  // Generate unique tracking ID for this specific link generation
+  const trackingId = `tg_${userId}_${merchantSlug}_${Date.now()}`;
+
+  return {
+    affiliate_link: finalLink,
+    tracking_id: trackingId,
+    merchant: merchant
+  };
+}
+
+// Enhanced bot response with engaging UX and viral mechanics
+async function generateEnhancedBotResponse(userId: number, username: string, merchant: any, affiliateData: any): Promise<string> {
+  const displayName = username ? `@${username}` : `User ${userId}`;
+  const earnRate = merchant.base_mpd;
+  
+  // Calculate potential earnings example
+  const exampleSpend = earnRate >= 5 ? 100 : 200;
+  const exampleEarnings = Math.round(exampleSpend * earnRate);
+  
+  return `🎯 **${displayName}, your ${merchant.merchant_name} link is ready!**
+
+` +
+         `✨ **Earn ${earnRate} Max Miles per $1** spent
+` +
+         `💰 Example: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
+
+` +
+         `🚀 **Your personalized link:** 👆
+
+` +
+         `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!
+
+` +
+         `💡 **Discover more**: Try @HeyMax_shop_bot shopee, grab, klook...`;
+}
+
+// Enhanced viral keyboard with better UX
+async function generateViralKeyboard(userId: number, username: string, merchant: any, affiliateLink: string) {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles`,
+          url: affiliateLink
+        }
+      ],
+      [
+        {
+          text: `⚡ Get MY Unique Link for ${merchant.merchant_name}`,
+          callback_data: `generate:${merchant.merchant_slug}:${userId}`
+        }
+      ]
+    ]
+  };
+}
+
+// Enhanced analytics tracking with detailed metrics
+async function trackEnhancedLinkGeneration(userId: number, merchants: any[], searchTerm: string, query: TelegramInlineQuery) {
+  try {
+    // Log enhanced link generation with more details
+    const { error: insertError } = await supabase
+      .from('link_generations')
+      .insert({
+        user_id: userId,
+        merchant_slug: merchants.length > 0 ? merchants[0].merchant_slug : 'no_results',
+        generated_at: new Date().toISOString(),
+        search_term: searchTerm,
+        results_count: merchants.length,
+        chat_type: query.chat_type || 'unknown'
+      });
+
+    if (insertError) {
+      console.error("Error in enhanced tracking:", insertError);
+    }
+
+    // Update user link count
+    await supabase
+      .from('users')
+      .update({ 
+        link_count: supabase.raw('link_count + 1'),
+        last_activity: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+  } catch (error) {
+    console.error("Error in enhanced tracking:", error);
+    // Don't throw - tracking failures shouldn't break core functionality
   }
 }
 
