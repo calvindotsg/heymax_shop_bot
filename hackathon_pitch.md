@@ -42,11 +42,11 @@ A Telegram bot that turns group chats into instant shopping experiences powered 
 
 ##### Bot message
 ```
-🎯 @calvintanwj, your Pelago shopping link is ready!
+🎯 @maxtan, your Pelago shopping link is ready!
 
-✨ Earn Max Miles on every purchase - turn your Pelago shopping into free flights, dining, and more!
+✨ Earn up to 8 Max Miles per $1 spent on every Pelago purchase. Turn your Pelago shopping into free flights, dining, and more!
 
-👆 Tap your personalized link above to start earning
+👆 @maxtan Tap your personalized link above to start earning
 👇 Others: Generate YOUR unique link to earn Max Miles at Pelago too!
 
 💡 Try other merchants: @HeyMax_shop_bot [merchant] (e.g., Adidas, Apple, Starbucks)
@@ -54,7 +54,7 @@ A Telegram bot that turns group chats into instant shopping experiences powered 
 
 ##### Bot buttons
 
-1. [🛍️ Shop Pelago & Earn Miles (for @calvintanwj)](https://heymax.com/shop/Pelago?ref={user_id}&utm_source=telegram) 
+1. [🛍️ Shop Pelago & Earn Miles (for @maxtan)](https://heymax.com/shop/Pelago?ref={user_id}&utm_source=telegram) 
 2. [⚡ Get MY Unique Link for Pelago](TODO)
 
 **Viral Mechanics**: Each bot response creates FOMO in the group chat, encouraging others to generate their own affiliate links and creating a viral growth loop.
@@ -101,7 +101,7 @@ Transform every Telegram group into a Max Miles earning opportunity. From **11K 
 **User Flow**:
 1. User types `@HeyMax_shop_bot [merchant]` in group chat
 2. Bot extracts username and merchant from command
-3. Generates unique affiliate link with user tracking
+3. Generates unique affiliate link with user tracking and extract up to {{base_mpd}} Max Miles per $1 spent rate
 4. Returns formatted message with two CTA buttons
 
 ### Button Functionality
@@ -136,142 +136,16 @@ Viral Metrics: Group participation rates, user acquisition costs
 
 ### HeyMax merchant affiliate dataset schema
 
+Full dataset in JSON format: `dataset/extracted_affiliation_merchants_sg.json`
+
 Example using Pelago
 ```json
-{
-  "actionLockUptoDays": 10,
-  "backgroundColor": "#E5FC70",
-  "base_mpd": "8.0",
-  "bestStrategy": null,
-  "category": "Travel & Transportation",
-  "category_v2": [
-    "Activities",
-    "Travel"
-  ],
-  "cookiePeriodDays": 14,
-  "country_filter": "SG",
-  "deletedAt": null,
-  "domainName": "www.pelago.com",
-  "end_time": "Mon, 08 Sep 2025 15:59:00 GMT",
-  "flatRateType": "mpd",
-  "id": "652333352451772606",
-  "intentCategory": [
-    "Book travel"
-  ],
-  "isItp": true,
-  "mccInfo": {
-    "code": "4722",
-    "name": "Travel Agencies and Tour Operations"
-  },
-  "merchantDescription": "Discover over 11,000 unforgettable travel experiences in 80+ countries and 1000+ destinations.",
-  "merchantIcon": "https://storage.googleapis.com/max-sg/campaigns/brand_logos/Pelago%20Neon%20Black_800x800.png",
-  "merchantIconV2": "https://storage.googleapis.com/max-sg/assets/merchant_logos/merchant_pelago.png",
-  "merchantName": "Pelago by Singapore Airlines",
-  "merchant_id": "VFV3p5QDYlTPbDQROx9k",
-  "merchant_slug": "pelago-by-singapore-airlines",
-  "milesLockingPeriod": 0,
-  "mpdRateV2": [
-    {
-      "name": "Simcards & Wifi",
-      "type": "mpd",
-      "value": "12"
-    },
-    {
-      "name": "Airport Service",
-      "type": "mpd",
-      "value": "12"
-    },
-    {
-      "name": "Tours",
-      "type": "mpd",
-      "value": "10"
-    },
-    {
-      "name": "Attractions & Events",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "Theme parks",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "Transportation Passes & Tickets",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "Experiences",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "Classes & Wellness",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "JR Passes",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "Swiss Travel Pass",
-      "type": "mpd",
-      "value": "8"
-    },
-    {
-      "name": "All Others",
-      "type": "mpd",
-      "value": "4"
-    },
-    {
-      "name": "Formula 1 Singapore Grand Prix",
-      "type": "mpd",
-      "value": "3"
-    },
-    {
-      "name": "Waterbomb 2025",
-      "type": "mpd",
-      "value": "1"
-    }
-  ],
-  "offerId": "22181",
-  "payoutUptoDays": 40,
-  "promotions": [
-    {
-      "end_date": "Mon, 08 Sep 2025 15:59:00 GMT",
-      "reward": "Earn up to 12 Max Miles + 3 KrisFlyer Miles Per $1",
-      "start_date": "Wed, 27 Aug 2025 16:00:00 GMT",
-      "status": "ACTIVE",
-      "type": "UPSIZED"
-    }
-  ],
-  "ranking": 2,
-  "securityToken": "8sir2f3p8f5joul00f58i4698vvu79uz",
-  "sourcePlatform": "Impact.com",
-  "start_time": "Wed, 27 Aug 2025 16:00:00 GMT",
-  "status": "Ready",
-  "terms": null,
-  "terms_v2": [
-    "Max Miles are confirmed after booking completion",
-    "Max Miles are not awarded for bookings made via the Pelago app",
-    "Max Miles are not awarded for transactions with promo codes"
-  ],
-  "terms_v3": {
-    "exclusion_list_url": "",
-    "exclusions": [
-      "Max Miles are not awarded for transactions with promo codes"
-    ],
-    "show_on_every_visit": false,
-    "terms": [
-      "Max Miles are confirmed after booking completion"
-    ],
-    "updated_at": 1756200339
-  },
-  "trackedUptoDays": 2,
-  "trackingLink": "https://pelago.pxf.io/Wqa5xZ?subid1={{USER_ID}}",
-  "updatedAt": null
-}
+[
+  {
+    "base_mpd": "8.0",
+    "merchant_name": "Pelago by Singapore Airlines",
+    "merchant_slug": "pelago-by-singapore-airlines",
+    "tracking_link": "https://pelago.pxf.io/Wqa5xZ?subid1=telegram{{USER_ID}}"
+  }
+]
 ```

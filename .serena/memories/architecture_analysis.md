@@ -42,11 +42,10 @@ CREATE TABLE users (
 );
 
 CREATE TABLE merchants (
-  slug TEXT PRIMARY KEY,
-  name TEXT,
+  merchant_slug TEXT PRIMARY KEY,
+  merchant_name TEXT,
   tracking_link TEXT,
-  mpd_rate DECIMAL,
-  icon_url TEXT
+  base_mpd DECIMAL
 );
 
 CREATE TABLE link_generations (

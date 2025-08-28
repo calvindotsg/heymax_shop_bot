@@ -5,11 +5,10 @@
 
 ## Framework & APIs
 - **Telegram Bot API**: Core bot functionality and inline queries
-- **HeyMax Affiliate API**: Merchant data and tracking link generation
 - **Flask/FastAPI**: Web framework for webhook handling (to be determined)
 
 ## Data & Storage
-- **HeyMax Merchant Dataset**: JSON schema with 500+ merchants including tracking links, MPD rates, promotions
+- **HeyMax Merchant Dataset**: JSON schema with 500+ merchants with 3 fields: `base_mpd`, `merchantName`, `trackingLink`
 - **User Tracking**: Telegram user_id for affiliate link personalization
 - **Analytics Storage**: Click tracking, conversion measurement (implementation TBD)
 
@@ -19,7 +18,6 @@
 - **Security**: Telegram bot token management, API key protection
 
 ## Key Integrations
-- **HeyMax Platform**: Existing merchant affiliate system access
 - **Telegram API**: Bot commands, inline queries, message formatting
 - **Analytics**: Real-time click tracking and conversion measurement
 
