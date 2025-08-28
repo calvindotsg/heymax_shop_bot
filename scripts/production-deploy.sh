@@ -11,12 +11,18 @@ echo "================================================="
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
+# Default configuration
 PRODUCTION_PROJECT_ID=""
 TELEGRAM_BOT_TOKEN=""
 PRODUCTION_DB_PASSWORD=""
+ORG_ID=""
+SKIP_CONFIRMATION=false
+SKIP_DATA_SEED=false
+DRY_RUN=false
+VERBOSE=false
 
 # Function to print colored output
 print_status() {
@@ -31,6 +37,128 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Usage function
+show_usage() {
+    cat << EOF
+🚀 HeyMax Shop Bot - Production Deployment Script
+
+Usage: $0 [OPTIONS]
+
+Required Options:
+  -p, --project-id PROJECT_ID    Supabase production project ID
+  -t, --token BOT_TOKEN         Telegram bot token from @BotFather
+
+Optional Options:
+  -o, --org-id ORG_ID          Supabase organization ID (for new projects)
+  -d, --db-password PASSWORD   Production database password
+  -y, --yes                    Skip confirmation prompts
+  -s, --skip-seed             Skip merchant data seeding
+  --dry-run                   Show what would be deployed without executing
+  -v, --verbose               Enable verbose logging
+  -h, --help                  Show this help message
+
+Environment Variables (alternative to options):
+  PRODUCTION_PROJECT_ID       Supabase project ID
+  TELEGRAM_BOT_TOKEN         Bot token
+  SUPABASE_ORG_ID           Organization ID
+  PRODUCTION_DB_PASSWORD     Database password
+
+Examples:
+  $0 --project-id abc123 --token 123456:ABC-DEF
+  $0 -p abc123 -t 123456:ABC-DEF --yes --skip-seed
+  $0 --project-id abc123 --token 123456:ABC-DEF --dry-run
+
+EOF
+}
+
+# Parse command line arguments
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -p|--project-id)
+                PRODUCTION_PROJECT_ID="$2"
+                shift 2
+                ;;
+            -t|--token)
+                TELEGRAM_BOT_TOKEN="$2"
+                shift 2
+                ;;
+            -o|--org-id)
+                ORG_ID="$2"
+                shift 2
+                ;;
+            -d|--db-password)
+                PRODUCTION_DB_PASSWORD="$2"
+                shift 2
+                ;;
+            -y|--yes)
+                SKIP_CONFIRMATION=true
+                shift
+                ;;
+            -s|--skip-seed)
+                SKIP_DATA_SEED=true
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            -v|--verbose)
+                VERBOSE=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                show_usage
+                exit 1
+                ;;
+            *)
+                echo "Unexpected argument: $1" >&2
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+
+    # Use environment variables if not set via arguments
+    PRODUCTION_PROJECT_ID=${PRODUCTION_PROJECT_ID:-$PRODUCTION_PROJECT_ID}
+    TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-$TELEGRAM_BOT_TOKEN}
+    ORG_ID=${ORG_ID:-$SUPABASE_ORG_ID}
+    PRODUCTION_DB_PASSWORD=${PRODUCTION_DB_PASSWORD:-$PRODUCTION_DB_PASSWORD}
+
+    # Validate required parameters
+    if [[ -z "$PRODUCTION_PROJECT_ID" ]]; then
+        echo -e "${RED}Error: Production project ID is required${NC}" >&2
+        echo "Use --project-id or set PRODUCTION_PROJECT_ID environment variable" >&2
+        exit 1
+    fi
+
+    if [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
+        echo -e "${RED}Error: Telegram bot token is required${NC}" >&2
+        echo "Use --token or set TELEGRAM_BOT_TOKEN environment variable" >&2
+        exit 1
+    fi
+}
+
+# Execute command with dry-run support
+execute_cmd() {
+    local cmd="$1"
+    local description="${2:-$cmd}"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo -e "${BLUE}[DRY-RUN]${NC} Would execute: $description"
+        return 0
+    else
+        [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[EXEC]${NC} $cmd" >&2
+        eval "$cmd"
+        return $?
+    fi
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -43,12 +171,12 @@ check_prerequisites() {
     fi
     
     # Check if environment variables are set
-    if [[ -z "$PRODUCTION_PROJECT_ID" ]]; then
+    if [[ -z "$PRODUCTION_PROJECT_ID" ]] && [[ "$DRY_RUN" != "true" ]]; then
         print_warning "PRODUCTION_PROJECT_ID not set. Please set it in this script or as environment variable."
         echo "Example: export PRODUCTION_PROJECT_ID=your-project-id"
     fi
     
-    if [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
+    if [[ -z "$TELEGRAM_BOT_TOKEN" ]] && [[ "$DRY_RUN" != "true" ]]; then
         print_warning "TELEGRAM_BOT_TOKEN not set. Required for production deployment."
         echo "Get your bot token from @BotFather and set: export TELEGRAM_BOT_TOKEN=your-token"
     fi
@@ -242,32 +370,47 @@ EOF
 
 # Main deployment process
 main() {
+    # Parse command line arguments first
+    parse_args "$@"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "🔍 DRY RUN MODE - No actual changes will be made"
+        echo "==============================================="
+    fi
+    
     echo "Starting production deployment process..."
+    
+    # Show configuration
+    if [[ "$VERBOSE" == "true" ]] || [[ "$DRY_RUN" == "true" ]]; then
+        echo ""
+        echo "Configuration:"
+        echo "  Project ID: $PRODUCTION_PROJECT_ID"
+        echo "  Bot Token: ${TELEGRAM_BOT_TOKEN:0:10}..."
+        echo "  Skip Confirmation: $SKIP_CONFIRMATION"
+        echo "  Skip Data Seed: $SKIP_DATA_SEED"
+        echo "  Verbose: $VERBOSE"
+        echo "  Dry Run: $DRY_RUN"
+        echo ""
+    fi
     
     check_prerequisites
     
-    if [[ -z "$PRODUCTION_PROJECT_ID" ]] || [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
-        print_error "Required environment variables not set. Please configure and run again."
+    # Confirm deployment (unless skipped)
+    if [[ "$SKIP_CONFIRMATION" != "true" ]] && [[ "$DRY_RUN" != "true" ]]; then
         echo ""
-        echo "Required variables:"
-        echo "  export PRODUCTION_PROJECT_ID=your-supabase-project-id"
-        echo "  export TELEGRAM_BOT_TOKEN=your-bot-token-from-botfather"
+        print_warning "⚠️  PRODUCTION DEPLOYMENT WARNING ⚠️"
+        print_warning "This will deploy to production environment:"
+        print_warning "Project: $PRODUCTION_PROJECT_ID"
         echo ""
-        exit 1
-    fi
-    
-    # Confirm deployment
-    echo ""
-    print_warning "⚠️  PRODUCTION DEPLOYMENT WARNING ⚠️"
-    print_warning "This will deploy to production environment:"
-    print_warning "Project: $PRODUCTION_PROJECT_ID"
-    echo ""
-    read -p "Are you sure you want to continue? (y/N): " -n 1 -r
-    echo ""
-    
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_status "Deployment cancelled."
-        exit 0
+        read -p "Are you sure you want to continue? (y/N): " -n 1 -r
+        echo ""
+        
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_status "Deployment cancelled."
+            exit 0
+        fi
+    elif [[ "$SKIP_CONFIRMATION" == "true" ]]; then
+        print_status "Skipping confirmation (--yes flag used)"
     fi
     
     # Execute deployment steps
@@ -281,8 +424,13 @@ main() {
     create_deployment_docs
     
     echo ""
-    print_status "🎉 Production deployment completed successfully!"
-    print_status "Bot is now live and ready for users."
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_status "🔍 Dry run completed successfully!"
+        print_status "All deployment steps validated. Run without --dry-run to execute."
+    else
+        print_status "🎉 Production deployment completed successfully!"
+        print_status "Bot is now live and ready for users."
+    fi
     echo ""
     print_status "Next steps:"
     print_status "1. Test the bot in a Telegram chat: /start"

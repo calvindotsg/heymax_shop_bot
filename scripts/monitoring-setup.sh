@@ -4,23 +4,137 @@
 
 set -e
 
-echo "📊 HeyMax Shop Bot - Production Monitoring Setup"
-echo "==============================================="
+# Default configuration
+PRODUCTION_URL=""
+TELEGRAM_BOT_TOKEN=""
+ALERT_EMAIL=""
+MONITORING_INTERVAL="5"
+SKIP_PERFORMANCE_SETUP=false
+SKIP_DASHBOARD=false
+VERBOSE=false
+INTERACTIVE=true
 
 # Color codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
-print_status() { echo -e "${GREEN}[INFO]${NC} $1"; }
+# Usage function
+show_usage() {
+    cat << EOF
+📊 HeyMax Shop Bot - Production Monitoring Setup
+
+Usage: $0 [OPTIONS]
+
+Required Options:
+  -u, --url PRODUCTION_URL      Production bot URL (e.g., https://project.supabase.co/functions/v1/telegram-bot)
+
+Optional Options:
+  -t, --token BOT_TOKEN        Telegram bot token for webhook monitoring
+  -e, --email ALERT_EMAIL      Email address for alerts
+  -i, --interval MINUTES       Monitoring interval in minutes (default: 5)
+  --no-performance            Skip performance testing setup
+  --no-dashboard              Skip dashboard creation
+  --non-interactive           Run without prompting for input
+  -v, --verbose               Enable verbose logging
+  -h, --help                  Show this help message
+
+Environment Variables (alternative to options):
+  PRODUCTION_URL              Bot URL
+  TELEGRAM_BOT_TOKEN         Bot token
+  ALERT_EMAIL                Alert email
+  MONITORING_INTERVAL        Interval in minutes
+
+Examples:
+  $0 --url https://abc123.supabase.co/functions/v1/telegram-bot
+  $0 -u https://abc123.supabase.co/functions/v1/telegram-bot -t 123456:ABC-DEF -e admin@example.com
+  $0 --url https://abc123.supabase.co/functions/v1/telegram-bot --interval 10 --no-performance
+  $0 --url https://abc123.supabase.co/functions/v1/telegram-bot --non-interactive
+
+EOF
+}
+
+# Parse command line arguments
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -u|--url)
+                PRODUCTION_URL="$2"
+                shift 2
+                ;;
+            -t|--token)
+                TELEGRAM_BOT_TOKEN="$2"
+                shift 2
+                ;;
+            -e|--email)
+                ALERT_EMAIL="$2"
+                shift 2
+                ;;
+            -i|--interval)
+                MONITORING_INTERVAL="$2"
+                shift 2
+                ;;
+            --no-performance)
+                SKIP_PERFORMANCE_SETUP=true
+                shift
+                ;;
+            --no-dashboard)
+                SKIP_DASHBOARD=true
+                shift
+                ;;
+            --non-interactive)
+                INTERACTIVE=false
+                shift
+                ;;
+            -v|--verbose)
+                VERBOSE=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                show_usage
+                exit 1
+                ;;
+            *)
+                echo "Unexpected argument: $1" >&2
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+
+    # Use environment variables if not set via arguments
+    PRODUCTION_URL=${PRODUCTION_URL:-$PRODUCTION_URL}
+    TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-$TELEGRAM_BOT_TOKEN}
+    ALERT_EMAIL=${ALERT_EMAIL:-$ALERT_EMAIL}
+    MONITORING_INTERVAL=${MONITORING_INTERVAL:-${MONITORING_INTERVAL:-5}}
+
+    # Validate required parameters
+    if [[ -z "$PRODUCTION_URL" ]] && [[ "$INTERACTIVE" == "true" ]]; then
+        # Will be prompted later in interactive mode
+        return 0
+    elif [[ -z "$PRODUCTION_URL" ]] && [[ "$INTERACTIVE" == "false" ]]; then
+        echo -e "${RED}Error: Production URL is required in non-interactive mode${NC}" >&2
+        echo "Use --url or set PRODUCTION_URL environment variable" >&2
+        exit 1
+    fi
+}
+
+echo "📊 HeyMax Shop Bot - Production Monitoring Setup"
+echo "==============================================="
+
+print_status() { 
+    echo -e "${GREEN}[INFO]${NC} $1"
+    [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[DEBUG]${NC} Function: ${FUNCNAME[1]}" >&2
+}
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-
-# Configuration
-PRODUCTION_URL=""
-TELEGRAM_BOT_TOKEN=""
-ALERT_EMAIL=""
 
 # Health check function
 check_bot_health() {
@@ -174,8 +288,8 @@ EOF
     print_status "Setting up automated monitoring..."
     print_status "To enable automated monitoring, add this to your crontab:"
     echo ""
-    echo "# HeyMax Shop Bot monitoring (every 5 minutes)"
-    echo "*/5 * * * * $PWD/monitor-bot.sh '$PRODUCTION_URL' '$TELEGRAM_BOT_TOKEN' '$ALERT_EMAIL' >> $PWD/monitoring.log 2>&1"
+    echo "# HeyMax Shop Bot monitoring (every $MONITORING_INTERVAL minutes)"
+    echo "*/$MONITORING_INTERVAL * * * * $PWD/monitor-bot.sh '$PRODUCTION_URL' '$TELEGRAM_BOT_TOKEN' '$ALERT_EMAIL' >> $PWD/monitoring.log 2>&1"
     echo ""
     print_status "Run 'crontab -e' to add the above line"
 }
@@ -355,29 +469,82 @@ setup_performance_testing() {
 
 # Main monitoring setup
 main() {
+    # Parse command line arguments first
+    parse_args "$@"
+    
     echo "Starting monitoring setup..."
     
-    # Check if required variables are set
-    read -p "Enter your production bot URL (e.g., https://project.supabase.co/functions/v1/telegram-bot): " PRODUCTION_URL
-    read -p "Enter your Telegram bot token (optional, for webhook monitoring): " TELEGRAM_BOT_TOKEN
-    read -p "Enter alert email address (optional): " ALERT_EMAIL
-    
-    if [[ -n "$PRODUCTION_URL" ]]; then
-        check_bot_health "$PRODUCTION_URL" "$TELEGRAM_BOT_TOKEN"
+    # Show configuration if verbose
+    if [[ "$VERBOSE" == "true" ]]; then
+        echo ""
+        echo "Configuration:"
+        echo "  Production URL: ${PRODUCTION_URL:-'(to be prompted)'}"
+        echo "  Bot Token: ${TELEGRAM_BOT_TOKEN:+${TELEGRAM_BOT_TOKEN:0:10}...}"
+        echo "  Alert Email: ${ALERT_EMAIL:-'(none)'}"
+        echo "  Monitoring Interval: ${MONITORING_INTERVAL} minutes"
+        echo "  Interactive Mode: $INTERACTIVE"
+        echo "  Skip Performance: $SKIP_PERFORMANCE_SETUP"
+        echo "  Skip Dashboard: $SKIP_DASHBOARD"
+        echo ""
     fi
     
+    # Prompt for missing required variables in interactive mode
+    if [[ "$INTERACTIVE" == "true" ]]; then
+        if [[ -z "$PRODUCTION_URL" ]]; then
+            read -p "Enter your production bot URL (e.g., https://project.supabase.co/functions/v1/telegram-bot): " PRODUCTION_URL
+        fi
+        
+        if [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
+            read -p "Enter your Telegram bot token (optional, for webhook monitoring): " TELEGRAM_BOT_TOKEN
+        fi
+        
+        if [[ -z "$ALERT_EMAIL" ]]; then
+            read -p "Enter alert email address (optional): " ALERT_EMAIL
+        fi
+    fi
+    
+    # Validate URL format
+    if [[ -n "$PRODUCTION_URL" ]] && [[ ! "$PRODUCTION_URL" =~ ^https?:// ]]; then
+        print_error "Invalid URL format. Must start with http:// or https://"
+        exit 1
+    fi
+    
+    # Run health check if URL is provided
+    if [[ -n "$PRODUCTION_URL" ]]; then
+        check_bot_health "$PRODUCTION_URL" "$TELEGRAM_BOT_TOKEN"
+    else
+        print_warning "No production URL provided, skipping health check"
+    fi
+    
+    # Setup components based on flags
     setup_alerts
-    create_dashboard
-    setup_performance_testing
+    
+    if [[ "$SKIP_DASHBOARD" != "true" ]]; then
+        create_dashboard
+    else
+        print_status "Skipping dashboard creation (--no-dashboard flag used)"
+    fi
+    
+    if [[ "$SKIP_PERFORMANCE_SETUP" != "true" ]]; then
+        setup_performance_testing
+    else
+        print_status "Skipping performance setup (--no-performance flag used)"
+    fi
     
     echo ""
     print_status "🎉 Monitoring setup completed!"
-    print_status ""
+    echo ""
+    print_status "Generated files:"
+    print_status "  • monitor-bot.sh - Automated monitoring script"
+    [[ "$SKIP_DASHBOARD" != "true" ]] && print_status "  • monitoring-dashboard.html - Web dashboard"
+    echo ""
     print_status "Next steps:"
-    print_status "1. Set up the cron job for automated monitoring"
-    print_status "2. Configure monitoring-dashboard.html with your analytics URL"
-    print_status "3. Run performance tests: artillery run tests/performance/load-test-config.yml"
+    print_status "1. Set up the cron job for automated monitoring:"
+    echo "     */$MONITORING_INTERVAL * * * * $PWD/monitor-bot.sh '$PRODUCTION_URL' '$TELEGRAM_BOT_TOKEN' '$ALERT_EMAIL' >> $PWD/monitoring.log 2>&1"
+    [[ "$SKIP_DASHBOARD" != "true" ]] && print_status "2. Configure monitoring-dashboard.html with your analytics URL"
+    [[ "$SKIP_PERFORMANCE_SETUP" != "true" ]] && print_status "3. Run performance tests: artillery run tests/performance/load-test-config.yml"
     print_status "4. Monitor logs: tail -f monitoring.log"
+    print_status "5. Add to crontab: crontab -e"
 }
 
 # Run main setup
