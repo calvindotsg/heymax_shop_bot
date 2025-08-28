@@ -1,0 +1,35 @@
+{
+  "name": "heymax-shop-bot",
+  "version": "1.0.0",
+  "description": "Telegram inline bot for HeyMax social commerce with TDD framework",
+  "type": "module",
+  "scripts": {
+    "test": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write tests/",
+    "test:coverage": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write --coverage=coverage tests/",
+    "test:performance": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write tests/performance/",
+    "test:watch": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write --watch tests/",
+    "pipeline": "npm run test && npm run test:coverage && npm run test:performance",
+    "setup:local": "supabase init && supabase start",
+    "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration up",
+    "tdd:start": "npm run test:watch"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "affiliate",
+    "social-commerce",
+    "singapore",
+    "tdd",
+    "supabase"
+  ],
+  "author": "HeyMax Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "deno": ">=2.0.0"
+  }
+}

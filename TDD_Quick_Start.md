@@ -207,10 +207,10 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 
 ```bash
 # Quick setup command
-curl -fsSL https://raw.githubusercontent.com/[repo]/setup-tdd.sh | bash
+curl -fsSL https://raw.githubusercontent.com/calvindotsg/heymax_shop_bot/setup-tdd.sh | bash
 
 # Or manual setup
-git clone [repo]
+git clone calvindotsg/heymax_shop_bot
 cd heymax_shop_bot  
 npm install
 npm run test
