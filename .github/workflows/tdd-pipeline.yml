@@ -190,7 +190,7 @@ jobs:
           timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
             --coverage=coverage/ \
-            --reporter=verbose \
+            --reporter=pretty \
             tests/unit/ \
             || (echo "❌ Unit tests failed or timed out" && exit 1)
 
@@ -307,7 +307,7 @@ jobs:
           timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
             --coverage=integration-coverage/ \
-            --reporter=verbose \
+            --reporter=pretty \
             tests/integration/ \
             || (echo "❌ Integration tests failed or timed out" && exit 1)
 
@@ -371,7 +371,7 @@ jobs:
           # Run existing performance tests
           deno test \
             --allow-all \
-            --reporter=verbose \
+            --reporter=pretty \
             tests/performance/ \
             > performance-results/benchmarks.txt
 
@@ -384,7 +384,7 @@ jobs:
           # Run existing performance tests (already includes load tests)
           timeout 300 deno test \
             --allow-all \
-            --reporter=verbose \
+            --reporter=pretty \
             tests/performance/performance-validation.test.ts \
             || echo "⚠️ Performance tests may require live server - continuing"
 
