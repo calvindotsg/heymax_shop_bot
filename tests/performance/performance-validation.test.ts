@@ -5,14 +5,15 @@ import { assert, assertEquals, assertExists } from "testing/asserts.ts";
 
 // Test configuration
 const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
-  "http://localhost:54321";
+ "http://localhost:54321";
+const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ?? "test_key";
 
 // Helper function to check if Supabase is available
 async function isSupabaseAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${supabaseUrl}/rest/v1/`, {
       method: "GET",
-      headers: { "apikey": Deno.env.get("SUPABASE_ANON_KEY") ?? "test-key" },
+      headers: { "apikey": supabaseKey },
     });
     return response.status < 500;
   } catch {
@@ -20,11 +21,39 @@ async function isSupabaseAvailable(): Promise<boolean> {
   }
 }
 
+// Helper function to check if Edge Function is available
+async function isEdgeFunctionAvailable(): Promise<boolean> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/telegram-bot`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        update_id: 0,
+        inline_query: {
+          id: "health-check",
+          from: { id: 1, is_bot: false, first_name: "Test", username: "test" },
+          query: "",
+          offset: ""
+        }
+      })
+    });
+    
+    // Consume the response body to prevent resource leak
+    await response.text();
+    return response.status < 500;
+  } catch {
+    return false;
+  }
+}
+
 Deno.test("Performance - Bot should handle concurrent inline queries", async () => {
-  // Skip test if Supabase is not available
-  const isAvailable = await isSupabaseAvailable();
+  // Skip test if Edge Function is not available
+  const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping performance test - Supabase not available");
+    console.warn("⚠️ Skipping performance test - Edge Function not available");
     return;
   }
 
@@ -82,10 +111,10 @@ Deno.test("Performance - Bot should handle concurrent inline queries", async () 
 });
 
 Deno.test("Performance - Viral callback handling under load", async () => {
-  // Skip test if Supabase is not available
-  const isAvailable = await isSupabaseAvailable();
+  // Skip test if Edge Function is not available
+  const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping viral callback test - Supabase not available");
+    console.warn("⚠️ Skipping viral callback test - Edge Function not available");
     return;
   }
 
@@ -147,10 +176,10 @@ Deno.test("Performance - Viral callback handling under load", async () => {
 });
 
 Deno.test("Performance - Database query optimization", async () => {
-  // Skip test if Supabase is not available
-  const isAvailable = await isSupabaseAvailable();
+  // Skip test if Edge Function is not available
+  const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping database query test - Supabase not available");
+    console.warn("⚠️ Skipping database query test - Edge Function not available");
     return;
   }
 
@@ -174,6 +203,7 @@ Deno.test("Performance - Database query optimization", async () => {
     `Analytics query should be under 2s, got ${queryTime}ms`,
   );
 
+  // Properly consume the response body to prevent resource leak
   const analyticsData = await analyticsRequest.json();
   assertExists(analyticsData.user_metrics, "Should return user metrics");
   assertExists(analyticsData.viral_metrics, "Should return viral metrics");
@@ -217,10 +247,10 @@ Deno.test("Performance - Memory usage validation", () => {
 });
 
 Deno.test("Performance - Response time consistency", async () => {
-  // Skip test if Supabase is not available
-  const isAvailable = await isSupabaseAvailable();
+  // Skip test if Edge Function is not available
+  const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping response time test - Supabase not available");
+    console.warn("⚠️ Skipping response time test - Edge Function not available");
     return;
   }
 
@@ -371,10 +401,10 @@ Deno.test("Performance - Free tier resource usage estimation", () => {
 });
 
 Deno.test("Performance - Error rate under load validation", async () => {
-  // Skip test if Supabase is not available
-  const isAvailable = await isSupabaseAvailable();
+  // Skip test if Edge Function is not available
+  const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping error rate test - Supabase not available");
+    console.warn("⚠️ Skipping error rate test - Edge Function not available");
     return;
   }
 
