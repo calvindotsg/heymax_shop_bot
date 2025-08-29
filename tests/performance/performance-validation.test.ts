@@ -5,7 +5,7 @@ import { assert, assertEquals, assertExists } from "testing/asserts.ts";
 
 // Test configuration
 const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
- "http://localhost:54321";
+  "http://localhost:54321";
 const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ?? "test_key";
 
 // Helper function to check if Supabase is available
@@ -26,9 +26,9 @@ async function isEdgeFunctionAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/telegram-bot`, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseKey}`
+        "Authorization": `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
         update_id: 0,
@@ -36,11 +36,11 @@ async function isEdgeFunctionAvailable(): Promise<boolean> {
           id: "health-check",
           from: { id: 1, is_bot: false, first_name: "Test", username: "test" },
           query: "",
-          offset: ""
-        }
-      })
+          offset: "",
+        },
+      }),
     });
-    
+
     // Consume the response body to prevent resource leak
     await response.text();
     return response.status < 500;
@@ -114,7 +114,9 @@ Deno.test("Performance - Viral callback handling under load", async () => {
   // Skip test if Edge Function is not available
   const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping viral callback test - Edge Function not available");
+    console.warn(
+      "⚠️ Skipping viral callback test - Edge Function not available",
+    );
     return;
   }
 
@@ -179,7 +181,9 @@ Deno.test("Performance - Database query optimization", async () => {
   // Skip test if Edge Function is not available
   const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping database query test - Edge Function not available");
+    console.warn(
+      "⚠️ Skipping database query test - Edge Function not available",
+    );
     return;
   }
 
@@ -250,7 +254,9 @@ Deno.test("Performance - Response time consistency", async () => {
   // Skip test if Edge Function is not available
   const isAvailable = await isEdgeFunctionAvailable();
   if (!isAvailable) {
-    console.warn("⚠️ Skipping response time test - Edge Function not available");
+    console.warn(
+      "⚠️ Skipping response time test - Edge Function not available",
+    );
     return;
   }
 
