@@ -126,7 +126,7 @@ export async function cleanupAllTestData(): Promise<void> {
       100000,
     );
     await client.from("link_generations").delete().gte("user_id", 100000);
-    await client.from("users").delete().gte("telegram_user_id", 100000);
+    await client.from("users").delete().gte("id", 100000); // Use 'id' not 'telegram_user_id'
 
     console.log("🧹 Test data cleanup completed");
   } catch (error) {

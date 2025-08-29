@@ -47,8 +47,9 @@ async function cleanupTestData() {
     );
     await testClient.from("users").delete().gt("id", 1000000000); // Only test users with large IDs
   } catch (error) {
-    console.warn(
-      "Cleanup warning:",
+    // Use console.log instead of console.warn to avoid potential test runner issues
+    console.log(
+      "ℹ️ Cleanup info:",
       error instanceof Error ? error.message : String(error),
     );
   }
