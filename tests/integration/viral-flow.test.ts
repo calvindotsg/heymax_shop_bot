@@ -9,8 +9,10 @@ import {
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Test configuration
-const supabaseUrl: string = Deno.env.get("SUPABASE_URL") || "https://test.supabase.co";
-const SUPABASE_ANON_KEY: string = Deno.env.get("SUPABASE_ANON_KEY") || "test-key";
+const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ||
+  "https://test.supabase.co";
+const SUPABASE_ANON_KEY: string = Deno.env.get("SUPABASE_ANON_KEY") ||
+  "test-key";
 
 const testClient = createClient(
   supabaseUrl || "https://test.supabase.co",
