@@ -298,7 +298,7 @@ jobs:
 
       - name: Run integration tests
         env:
-          SUPABASE_URL: http://localhost:54321
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN_TEST }}
         run: |
