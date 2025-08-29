@@ -150,7 +150,9 @@ Deno.test("Performance - Memory usage validation", () => {
     match_score: Math.random(),
   }));
 
-  const startMemory = (performance as { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
+  const startMemory =
+    (performance as { memory?: { usedJSHeapSize: number } }).memory
+      ?.usedJSHeapSize || 0;
 
   // Simulate fuzzy search processing
   const searchTerm = "test";
@@ -164,7 +166,9 @@ Deno.test("Performance - Memory usage validation", () => {
     .sort((a, b) => b.match_score - a.match_score)
     .slice(0, 10);
 
-  const endMemory = (performance as { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
+  const endMemory =
+    (performance as { memory?: { usedJSHeapSize: number } }).memory
+      ?.usedJSHeapSize || 0;
   const memoryUsed = endMemory - startMemory;
 
   assertEquals(results.length, 10, "Should return top 10 results");

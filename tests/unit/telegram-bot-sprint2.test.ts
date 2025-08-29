@@ -226,7 +226,8 @@ Deno.test("Enhanced Viral Keyboard - should have proper button structure", () =>
     "Shop button should have affiliate link",
   );
   assertStringIncludes(
-    (keyboard.inline_keyboard[1][0] as { text: string; callback_data: string }).callback_data,
+    (keyboard.inline_keyboard[1][0] as { text: string; callback_data: string })
+      .callback_data,
     `generate:${merchant.merchant_slug}:${userId}`,
     "Viral button should have callback data",
   );

@@ -93,7 +93,15 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 
 // Global bot info cache
-let BOT_INFO: { id: number; is_bot: boolean; first_name: string; username: string; can_join_groups?: boolean; can_read_all_group_messages?: boolean; supports_inline_queries?: boolean } | null = null;
+let BOT_INFO: {
+  id: number;
+  is_bot: boolean;
+  first_name: string;
+  username: string;
+  can_join_groups?: boolean;
+  can_read_all_group_messages?: boolean;
+  supports_inline_queries?: boolean;
+} | null = null;
 let BOT_USERNAME = "heymax_shop_bot"; // fallback default
 let BOT_DEEP_LINK = "https://t.me/heymax_shop_bot"; // fallback deep link
 
@@ -977,10 +985,11 @@ async function getAnalyticsSummary() {
       .not("merchant_slug", "is", null);
 
     // Calculate merchant popularity
-    const merchantCounts = topMerchants?.reduce((acc: Record<string, number>, item) => {
-      acc[item.merchant_slug] = (acc[item.merchant_slug] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
+    const merchantCounts =
+      topMerchants?.reduce((acc: Record<string, number>, item) => {
+        acc[item.merchant_slug] = (acc[item.merchant_slug] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
 
     const topMerchantsRanked = Object.entries(merchantCounts)
       .sort(([, a], [, b]) => (b as number) - (a as number))
@@ -1229,7 +1238,15 @@ async function answerCallbackQuery(
 }
 
 // Send message to chat (for viral responses and help)
-async function sendMessage(chatId: number, text: string, replyMarkup?: { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> }) {
+async function sendMessage(
+  chatId: number,
+  text: string,
+  replyMarkup?: {
+    inline_keyboard: Array<
+      Array<{ text: string; url?: string; callback_data?: string }>
+    >;
+  },
+) {
   const telegramApiUrl =
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
@@ -1238,7 +1255,11 @@ async function sendMessage(chatId: number, text: string, replyMarkup?: { inline_
     text: string;
     parse_mode: string;
     disable_web_page_preview: boolean;
-    reply_markup?: { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> };
+    reply_markup?: {
+      inline_keyboard: Array<
+        Array<{ text: string; url?: string; callback_data?: string }>
+      >;
+    };
   } = {
     chat_id: chatId,
     text: text,
