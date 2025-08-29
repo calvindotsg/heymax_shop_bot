@@ -3,6 +3,10 @@ import { assert, assertEquals, assertExists } from "testing/asserts.ts";
 // Sprint 3 Performance Validation Tests
 // Load testing and viral scenario performance validation
 
+// Test configuration
+const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
+  "http://localhost:54321";
+
 Deno.test("Performance - Bot should handle concurrent inline queries", async () => {
   const concurrentUsers = 10;
   const queries = [];
@@ -23,7 +27,7 @@ Deno.test("Performance - Bot should handle concurrent inline queries", async () 
   for (let i = 1; i <= concurrentUsers; i++) {
     const query = mockInlineQuery(100000 + i);
     queries.push(
-      fetch("http://localhost:54321/functions/v1/telegram-bot", {
+      fetch(`${supabaseUrl}/functions/v1/telegram-bot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,7 +86,7 @@ Deno.test("Performance - Viral callback handling under load", async () => {
     };
 
     viralCallbacks.push(
-      fetch("http://localhost:54321/functions/v1/telegram-bot", {
+      fetch(`${supabaseUrl}/functions/v1/telegram-bot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -120,7 +124,7 @@ Deno.test("Performance - Database query optimization", async () => {
 
   // Test complex analytics query performance
   const analyticsRequest = await fetch(
-    "http://localhost:54321/functions/v1/telegram-bot/analytics",
+    `${supabaseUrl}/functions/v1/telegram-bot/analytics`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -186,7 +190,7 @@ Deno.test("Performance - Response time consistency", async () => {
     const startTime = Date.now();
 
     const response = await fetch(
-      "http://localhost:54321/functions/v1/telegram-bot",
+      `${supabaseUrl}/functions/v1/telegram-bot`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -394,7 +398,7 @@ Deno.test("Performance - Error rate under load validation", async () => {
     }
 
     requests.push(
-      fetch("http://localhost:54321/functions/v1/telegram-bot", {
+      fetch(`${supabaseUrl}/functions/v1/telegram-bot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),

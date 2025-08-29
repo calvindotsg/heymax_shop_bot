@@ -387,6 +387,8 @@ jobs:
           echo "PERFORMANCE_MAX_RESPONSE_TIME=1000" >> $GITHUB_ENV
 
       - name: Run performance benchmarks
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
         run: |
           echo "⚡ Running performance benchmarks..."
 
