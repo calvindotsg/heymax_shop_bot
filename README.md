@@ -3,8 +3,9 @@
 > Telegram inline bot that transforms group chats into Max Miles earning opportunities through viral social commerce.
 
 [![TDD Pipeline](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml/badge.svg)](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml)
-[![Supabase](https://img.shields.io/badge/platform-Supabase%20Edge%20Functions-blue)](https://supabase.com)
+[![codecov](https://codecov.io/github/calvindotsg/heymax_shop_bot/graph/badge.svg?token=GSKUDZJD73)](https://codecov.io/github/calvindotsg/heymax_shop_bot)
 [![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/calvindotsg/heymax_shop_bot/main)](https://github.com/calvindotsg/heymax_shop_bot/commits/main/)
+[![Supabase](https://img.shields.io/badge/platform-Supabase%20Edge%20Functions-blue)](https://supabase.com)
 
 ## 🚀 What is HeyMax Shop Bot?
 
