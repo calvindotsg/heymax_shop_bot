@@ -10,6 +10,8 @@ import {
 
 // Test configuration
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "test-token";
+const TEST_CHAT_ID = Deno.env.get("TELEGRAM_TEST_CHAT_ID") || "12345678";
+
 const BASE_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 // Type definitions for Telegram API
@@ -82,6 +84,9 @@ Deno.test("Integration: Telegram API - Webhook URL validation", async () => {
         body: JSON.stringify({ test: true }),
       });
 
+      // Consume the response body to prevent resource leak
+      await webhookResponse.text();
+
       // Webhook should at least be reachable (may return 400 for invalid data)
       assert(
         webhookResponse.status < 500,
@@ -143,8 +148,7 @@ Deno.test("Integration: Telegram API - Inline query support", async () => {
 
 Deno.test("Integration: Telegram API - Message sending capability", async () => {
   // Skip if no test chat ID provided
-  const testChatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID");
-  if (!testChatId) {
+  if (!TEST_CHAT_ID) {
     console.log(
       "⚠️ Skipping message sending test - no TELEGRAM_TEST_CHAT_ID provided",
     );
@@ -156,7 +160,7 @@ Deno.test("Integration: Telegram API - Message sending capability", async () => 
   }`;
 
   const { response, data } = await callTelegramAPI("sendMessage", {
-    chat_id: testChatId,
+    chat_id: TEST_CHAT_ID,
     text: testMessage,
     disable_notification: true, // Don't spam during tests
   });
@@ -168,7 +172,7 @@ Deno.test("Integration: Telegram API - Message sending capability", async () => 
     const message = data.result;
     assertExists(message.message_id);
     assertEquals(message.text, testMessage);
-    assertEquals(message.chat.id.toString(), testChatId);
+    assertEquals(message.chat.id.toString(), TEST_CHAT_ID);
 
     console.log(
       `✅ Test message sent successfully (ID: ${message.message_id})`,
