@@ -2,8 +2,8 @@ import { assertEquals } from "testing/asserts.ts";
 import { createClient } from "@supabase/supabase-js";
 
 // Test configuration
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "http://localhost:54321";
+const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || "test_key";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
