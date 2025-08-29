@@ -1,6 +1,7 @@
 # Code Style & Conventions
 
 ## Python Style Guidelines
+
 - **PEP 8**: Follow Python Enhancement Proposal 8 for code style
 - **Line Length**: 88 characters (Black formatter default)
 - **Imports**: Organize imports (stdlib, third-party, local)
@@ -11,6 +12,7 @@
   - Private methods: `_leading_underscore`
 
 ## Code Organization
+
 ```python
 # File structure example
 """Module docstring."""
@@ -35,6 +37,7 @@ class BotHandler:
 ```
 
 ## Documentation Standards
+
 - **Docstrings**: Use Google-style docstrings
 - **Type Hints**: Include type annotations for function parameters and returns
 - **Comments**: Explain complex business logic, not obvious code
@@ -56,12 +59,14 @@ def generate_affiliate_link(user_id: str, merchant_slug: str) -> dict[str, str]:
 ```
 
 ## Error Handling
+
 - Use specific exception types
 - Log errors appropriately
 - Provide meaningful error messages to users
 - Implement graceful degradation for API failures
 
 ## Testing Conventions
+
 - **File naming**: `test_*.py` or `*_test.py`
 - **Test methods**: `test_method_name_scenario`
 - **Fixtures**: Use pytest fixtures for common test data

@@ -1,6 +1,7 @@
 # HeyMax Shop Bot 🛍️
 
-> Telegram inline bot that transforms group chats into Max Miles earning opportunities through viral social commerce.
+> Telegram inline bot that transforms group chats into Max Miles earning
+> opportunities through viral social commerce.
 
 [![TDD Pipeline](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml/badge.svg)](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml)
 [![codecov](https://codecov.io/github/calvindotsg/heymax_shop_bot/graph/badge.svg?token=GSKUDZJD73)](https://codecov.io/github/calvindotsg/heymax_shop_bot)
@@ -9,16 +10,24 @@
 
 ## 🚀 What is HeyMax Shop Bot?
 
-HeyMax Shop Bot is a production-ready Telegram inline bot that enables users to earn [Max Miles](https://heymax.ai) on purchases by generating personalized affiliate links directly in group chats. Built for HeyMax's platform ($6M run rate, 272M+ Max Miles issued), it transforms group conversations into viral earning opportunities.
+HeyMax Shop Bot is a production-ready Telegram inline bot that enables users to
+earn [Max Miles](https://heymax.ai) on purchases by generating personalized
+affiliate links directly in group chats. Built for HeyMax's platform ($6M run
+rate, 272M+ Max Miles issued), it transforms group conversations into viral
+earning opportunities.
 
 ### Key Features
 
-- 🔍 **Inline Search**: Type `@heymax_shop_bot amazon` in any chat to find merchants
-- 🎯 **Personalized Links**: Generate tracked affiliate links earning Max Miles per $1 spent  
-- ⚡ **Viral Mechanics**: "Get MY Unique Link" buttons create viral loops in group chats
+- 🔍 **Inline Search**: Type `@heymax_shop_bot amazon` in any chat to find
+  merchants
+- 🎯 **Personalized Links**: Generate tracked affiliate links earning Max Miles
+  per $1 spent
+- ⚡ **Viral Mechanics**: "Get MY Unique Link" buttons create viral loops in
+  group chats
 - 📊 **Real-time Analytics**: Track viral coefficient, clicks, and conversions
 - 🛍️ **187+ Merchants**: Singapore's top merchants with instant link generation
-- 💬 **Group Chat Native**: Works seamlessly in private chats, groups, and channels
+- 💬 **Group Chat Native**: Works seamlessly in private chats, groups, and
+  channels
 
 ## 🏗️ Architecture
 
@@ -37,7 +46,9 @@ HeyMax Shop Bot is a production-ready Telegram inline bot that enables users to 
 
 ### Tech Stack
 
-- **Runtime**: [Supabase Edge Functions](https://supabase.com/docs/guides/functions) (Deno + TypeScript)
+- **Runtime**:
+  [Supabase Edge Functions](https://supabase.com/docs/guides/functions) (Deno +
+  TypeScript)
 - **Database**: PostgreSQL with viral interaction tracking
 - **APIs**: Telegram Bot API with webhook integration
 - **Testing**: Deno native testing + Artillery load testing
@@ -92,7 +103,8 @@ npm run test:performance
 1. **Search**: Type `@heymax_shop_bot amazon` in any Telegram chat
 2. **Select**: Choose merchant from fuzzy-matched results
 3. **Share**: Tap personalized affiliate link to earn Max Miles
-4. **Viral Growth**: Others can tap "Get MY Unique Link" to create their own links
+4. **Viral Growth**: Others can tap "Get MY Unique Link" to create their own
+   links
 
 ### Example Flow
 
@@ -129,7 +141,8 @@ npm run pipeline
 
 ### Test Categories
 
-- **Unit Tests**: Core bot functionality, affiliate link generation, viral mechanics
+- **Unit Tests**: Core bot functionality, affiliate link generation, viral
+  mechanics
 - **Integration Tests**: Database operations, Telegram API integration
 - **Performance Tests**: Load testing with Artillery (100+ concurrent users)
 - **E2E Tests**: Complete user journey validation
@@ -153,7 +166,8 @@ npm run pipeline
 
 ### Analytics Dashboard
 
-Access real-time analytics at: `https://your-project.supabase.co/functions/v1/telegram-bot/analytics`
+Access real-time analytics at:
+`https://your-project.supabase.co/functions/v1/telegram-bot/analytics`
 
 ## 🔧 Development
 
@@ -180,12 +194,14 @@ heymax_shop_bot/
 ### Key Components
 
 #### Core Bot Logic (`supabase/functions/telegram-bot/index.ts`)
-- **Inline Query Processing**: Fuzzy search with merchant matching  
+
+- **Inline Query Processing**: Fuzzy search with merchant matching
 - **Affiliate Link Generation**: User ID tracking with UTM parameters
 - **Viral Mechanics**: Callback query system for viral link generation
 - **Analytics Tracking**: Real-time viral coefficient and user engagement
 
 #### Database Schema
+
 - **Users**: Telegram user tracking with activity metrics
 - **Merchants**: Singapore merchant data with Max Miles rates
 - **Link Generations**: Affiliate link tracking with analytics
@@ -211,7 +227,8 @@ npm run tdd:start
 ### Deployment Checklist
 
 - [ ] Supabase project created with PostgreSQL database
-- [ ] Telegram Bot Token configured via [@BotFather](https://telegram.me/BotFather)
+- [ ] Telegram Bot Token configured via
+      [@BotFather](https://telegram.me/BotFather)
 - [ ] Environment variables set (see [Configuration](#2-configuration))
 - [ ] Database migrations applied (`npm run db:migrate`)
 - [ ] Merchant data seeded (automated in deployment script)
@@ -228,18 +245,18 @@ npm run tdd:start
 
 ### Infrastructure Scaling
 
-| Tier | Invocations/Month | Cost | Use Case |
-|------|------------------|------|----------|
-| **Free** | <400K | $0 | MVP, early testing |
-| **Pro** | <2M | $25 | Growth phase |
-| **Team** | <10M | $599 | Scale deployment |
+| Tier     | Invocations/Month | Cost | Use Case           |
+| -------- | ----------------- | ---- | ------------------ |
+| **Free** | <400K             | $0   | MVP, early testing |
+| **Pro**  | <2M               | $25  | Growth phase       |
+| **Team** | <10M              | $599 | Scale deployment   |
 
 ## 🔐 Security & Compliance
 
 ### Security Measures
 
 - **Input Validation**: All user inputs sanitized and validated
-- **Rate Limiting**: Telegram API rate limit compliance  
+- **Rate Limiting**: Telegram API rate limit compliance
 - **Error Handling**: Comprehensive error catching without information leakage
 - **Token Security**: Environment-based secret management
 
@@ -269,43 +286,57 @@ npm run tdd:start
 ## 📈 Business Impact
 
 ### Target Market
+
 - **Audience**: 11K existing HeyMax Telegram community members
 - **Expansion**: Asia Pacific group chat social commerce
 - **Revenue Model**: Affiliate commission on Max Miles earning transactions
 
 ### Success Metrics
+
 - **Viral Coefficient**: >1.2 sustainable viral growth
-- **User Engagement**: >10% click-through rate on affiliate links  
+- **User Engagement**: >10% click-through rate on affiliate links
 - **Community Growth**: 50% month-over-month group chat adoption
 - **Revenue**: $100K+ monthly affiliate commission target
 
 ## 📚 Documentation
 
-- **[Setup Guide](documentation/SETUP.md)**: Detailed installation and configuration
-- **[Implementation Guide](documentation/MVP_Implementation_Workflow.md)**: Complete development workflow
-- **[TDD Framework](documentation/TDD_Framework_Setup.md)**: Testing methodology and best practices
-- **[Production Deployment](documentation/PRODUCTION_DEPLOYMENT.md)**: Deployment and monitoring guides
+- **[Setup Guide](documentation/SETUP.md)**: Detailed installation and
+  configuration
+- **[Implementation Guide](documentation/MVP_Implementation_Workflow.md)**:
+  Complete development workflow
+- **[TDD Framework](documentation/TDD_Framework_Setup.md)**: Testing methodology
+  and best practices
+- **[Production Deployment](documentation/PRODUCTION_DEPLOYMENT.md)**:
+  Deployment and monitoring guides
 - **[Sprint Documentation](documentation/)**: Sprint 1-3 implementation details
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## 🙋‍♀️ Support
 
 ### Community
-- **Telegram Community**: [HeyMax Community](https://t.me/+gNZRwXXy9Gc1MzJl) (11K+ members)
-- **Issues**: [GitHub Issues](https://github.com/calvindotsg/heymax_shop_bot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/calvindotsg/heymax_shop_bot/discussions)
 
-### Commercial Support  
+- **Telegram Community**: [HeyMax Community](https://t.me/+gNZRwXXy9Gc1MzJl)
+  (11K+ members)
+- **Issues**:
+  [GitHub Issues](https://github.com/calvindotsg/heymax_shop_bot/issues)
+- **Discussions**:
+  [GitHub Discussions](https://github.com/calvindotsg/heymax_shop_bot/discussions)
+
+### Commercial Support
+
 For enterprise deployment and custom features:
+
 - **Email**: help@heymax.ai
 - **Website**: [heymax.ai](https://heymax.ai)
 - **Business Development**: Scaling across Asia Pacific markets
 
 ---
 
-**Built with ❤️ by the HeyMax Team** | **Transforming Group Chats into Earning Opportunities**
+**Built with ❤️ by the HeyMax Team** | **Transforming Group Chats into Earning
+Opportunities**
 
-*Ready to earn Max Miles? Start with: `@heymax_shop_bot amazon`* 🚀
+_Ready to earn Max Miles? Start with: `@heymax_shop_bot amazon`_ 🚀

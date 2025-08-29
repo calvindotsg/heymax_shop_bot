@@ -1,5 +1,5 @@
 {
-  "nodeModulesDir": true,
+  "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno run --allow-env --allow-net --allow-read --allow-write --watch supabase/functions/telegram-bot/index.ts",
     "test": "deno test --allow-env --allow-net --allow-read --allow-write tests/",
@@ -9,17 +9,13 @@
   "imports": {
     "@supabase/functions-js": "https://esm.sh/@supabase/functions-js@2",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
-    "std/": "https://deno.land/std@0.208.0/",
-    "testing/": "https://deno.land/std@0.208.0/testing/"
+    "std/": "https://deno.land/std@0.224.0/",
+    "testing/": "https://deno.land/std@0.224.0/testing/"
   },
   "fmt": {
-    "files": {
-      "include": ["src/", "tests/", "supabase/functions/"]
-    }
+    "include": ["src/", "tests/", "supabase/functions/"]
   },
   "lint": {
-    "files": {
-      "include": ["src/", "tests/", "supabase/functions/"]
-    }
+    "include": ["src/", "tests/", "supabase/functions/"]
   }
 }

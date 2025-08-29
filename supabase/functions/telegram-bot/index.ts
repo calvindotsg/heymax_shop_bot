@@ -58,11 +58,13 @@ interface TelegramInlineQueryResult {
     parse_mode: "Markdown";
   };
   reply_markup?: {
-    inline_keyboard: Array<Array<{
-      text: string;
-      url?: string;
-      callback_data?: string;
-    }>>;
+    inline_keyboard: Array<
+      Array<{
+        text: string;
+        url?: string;
+        callback_data?: string;
+      }>
+    >;
   };
   description?: string;
   thumbnail_url?: string;
@@ -86,11 +88,13 @@ async function getBotInfo() {
   if (BOT_INFO) {
     return BOT_INFO; // Return cached info
   }
-  
+
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`,
+    );
     const data = await response.json();
-    
+
     if (data.ok && data.result) {
       BOT_INFO = data.result;
       BOT_USERNAME = data.result.username || "heymax_shop_bot";
@@ -111,47 +115,51 @@ serve(async (req) => {
   try {
     // Initialize bot info on first request (cached afterwards)
     await getBotInfo();
-    
+
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
-      return new Response("ok", { 
+      return new Response("ok", {
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE"
-        }
+          "Access-Control-Allow-Headers":
+            "authorization, x-client-info, apikey, content-type",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+        },
       });
     }
 
     // Handle analytics requests (for monitoring dashboard) - BEFORE parsing webhook data
-    if (req.url.includes('/analytics')) {
+    if (req.url.includes("/analytics")) {
       const analytics = await getAnalyticsSummary();
       return new Response(JSON.stringify(analytics), {
-        headers: { 
-          'Content-Type': 'application/json',
-          "Access-Control-Allow-Origin": "*"
-        }
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
       });
     }
 
     // Handle health check requests
-    if (req.method === "GET" && !req.url.includes('/analytics')) {
-      return new Response(JSON.stringify({ 
-        status: "healthy", 
-        timestamp: new Date().toISOString(),
-        service: "HeyMax Shop Bot"
-      }), {
-        status: 200,
-        headers: { 
-          'Content-Type': 'application/json',
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
+    if (req.method === "GET" && !req.url.includes("/analytics")) {
+      return new Response(
+        JSON.stringify({
+          status: "healthy",
+          timestamp: new Date().toISOString(),
+          service: "HeyMax Shop Bot",
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
     }
 
     // Parse Telegram webhook update (only for POST requests)
     const update: TelegramUpdate = await req.json();
-    
+
     // Handle inline queries (core bot functionality)
     if (update.inline_query) {
       await handleInlineQuery(update.inline_query);
@@ -171,7 +179,6 @@ serve(async (req) => {
     }
 
     return new Response("OK", { status: 200 });
-
   } catch (error) {
     console.error("Error processing update:", error);
     return new Response("Error", { status: 500 });
@@ -203,22 +210,23 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
         type: "article",
         id: "no_results",
         title: `❌ No merchants found for "${searchTerm}"`,
-        description: "Try popular brands: amazon, trip.com, klook, lazada, foodpanda",
+        description:
+          "Try popular brands: amazon, trip.com, klook, lazada, foodpanda",
         input_message_content: {
           message_text: `🔍 No merchants found for "${searchTerm}"
 
 ` +
-                       `💡 Try popular merchants: amazon, trip.com, klook, lazada, foodpanda
+            `💡 Try popular merchants: amazon, trip.com, klook, lazada, foodpanda
 
 ` +
-                       `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name to discover earning opportunities!
+            `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name to discover earning opportunities!
 
 ` +
-                       `📋 **More details & terms**: https://heymax.ai`,
-          parse_mode: "Markdown"
-        }
+            `📋 **More details & terms**: https://heymax.ai`,
+          parse_mode: "Markdown",
+        },
       };
-      
+
       await sendInlineQueryAnswer(query.id, [noResultsResult]);
       return;
     }
@@ -226,21 +234,37 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
     // Generate enhanced inline query results with viral mechanics
     const results: TelegramInlineQueryResult[] = await Promise.all(
       merchants.slice(0, 8).map(async (merchant, index) => {
-        const affiliateData = await generateAffiliateLink(userId, merchant.merchant_slug);
-        
+        const affiliateData = await generateAffiliateLink(
+          userId,
+          merchant.merchant_slug,
+        );
+
         return {
           type: "article",
           id: `${merchant.merchant_slug}_${index}`,
           title: `🛍️ ${merchant.merchant_name}`,
-          description: `Earn up to ${merchant.base_mpd} Max Miles per $1 • ${Math.round(merchant.match_score * 100)}% match`,
+          description: `Earn up to ${merchant.base_mpd} Max Miles per $1 • ${
+            Math.round(merchant.match_score * 100)
+          }% match`,
           input_message_content: {
-            message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
-            parse_mode: "Markdown"
+            message_text: await generateEnhancedBotResponse(
+              userId,
+              username,
+              merchant,
+              affiliateData,
+            ),
+            parse_mode: "Markdown",
           },
-          reply_markup: await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link),
-          thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+          reply_markup: await generateViralKeyboard(
+            userId,
+            username,
+            merchant,
+            affiliateData.affiliate_link,
+          ),
+          thumbnail_url:
+            "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png",
         };
-      })
+      }),
     );
 
     // Send results back to Telegram
@@ -248,10 +272,9 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
 
     // Enhanced analytics tracking
     await trackEnhancedLinkGeneration(userId, merchants, searchTerm, query);
-
   } catch (error) {
     console.error("Error handling inline query:", error);
-    
+
     // Enhanced error handling with helpful suggestions
     const errorResult: TelegramInlineQueryResult = {
       type: "article",
@@ -262,19 +285,19 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
         message_text: `⚠️ We're experiencing a temporary issue
 
 ` +
-                     `Please try again in a moment, or search for popular merchants like:
+          `Please try again in a moment, or search for popular merchants like:
 ` +
-                     `• amazon • trip.com • klook • lazada • foodpanda
+          `• amazon • trip.com • klook • lazada • foodpanda
 
 ` +
-                     `🔧 If the issue persists, our team has been notified.
+          `🔧 If the issue persists, our team has been notified.
 
 ` +
-                     `📋 **More details & terms**: https://heymax.ai`,
-        parse_mode: "Markdown"
-      }
+          `📋 **More details & terms**: https://heymax.ai`,
+        parse_mode: "Markdown",
+      },
     };
-    
+
     await sendInlineQueryAnswer(query.id, [errorResult]);
   }
 }
@@ -283,12 +306,12 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
 
 async function upsertUser(userId: number, username: string) {
   const { error } = await supabase
-    .from('users')
+    .from("users")
     .upsert(
       { id: userId, username: username, first_seen: new Date().toISOString() },
-      { onConflict: 'id' }
+      { onConflict: "id" },
     );
-  
+
   if (error) {
     console.error("Error upserting user:", error);
     throw error;
@@ -300,20 +323,22 @@ async function upsertUser(userId: number, username: string) {
 // Enhanced merchant search with fuzzy matching and scoring
 async function searchMerchantsEnhanced(searchTerm: string) {
   const { data, error } = await supabase
-    .from('merchants')
-    .select('merchant_slug, merchant_name, tracking_link, base_mpd')
-    .or(`merchant_name.ilike.%${searchTerm}%,merchant_slug.ilike.%${searchTerm}%`)
-    .order('base_mpd', { ascending: false })
+    .from("merchants")
+    .select("merchant_slug, merchant_name, tracking_link, base_mpd")
+    .or(
+      `merchant_name.ilike.%${searchTerm}%,merchant_slug.ilike.%${searchTerm}%`,
+    )
+    .order("base_mpd", { ascending: false })
     .limit(15);
-  
+
   if (error) throw error;
-  
+
   // Add fuzzy match scoring
-  const merchants = (data || []).map(merchant => ({
+  const merchants = (data || []).map((merchant) => ({
     ...merchant,
-    match_score: calculateMatchScore(merchant.merchant_name, searchTerm)
+    match_score: calculateMatchScore(merchant.merchant_name, searchTerm),
   }));
-  
+
   // Sort by match score, then by MPD value
   return merchants.sort((a, b) => {
     if (Math.abs(a.match_score - b.match_score) < 0.1) {
@@ -327,36 +352,36 @@ async function searchMerchantsEnhanced(searchTerm: string) {
 function calculateMatchScore(merchantName: string, searchTerm: string): number {
   const name = merchantName.toLowerCase();
   const term = searchTerm.toLowerCase();
-  
+
   // Exact match
   if (name === term) return 1.0;
-  
+
   // Starts with search term
   if (name.startsWith(term)) return 0.9;
-  
+
   // Contains search term
   if (name.includes(term)) return 0.8;
-  
+
   // Word boundary match - split on spaces, hyphens, underscores
   const words = name.split(/[ \-_]+/);
   for (const word of words) {
     if (word.startsWith(term)) return 0.7;
     if (word.includes(term)) return 0.6;
   }
-  
+
   // Basic similarity for fuzzy matching
   const commonChars = countCommonChars(name, term);
   const similarity = commonChars / Math.max(name.length, term.length);
-  
+
   return similarity > 0.5 ? similarity * 0.5 : 0;
 }
 
 // Count common characters between two strings
 function countCommonChars(str1: string, str2: string): number {
-  const chars1 = str1.split('').sort();
-  const chars2 = str2.split('').sort();
+  const chars1 = str1.split("").sort();
+  const chars2 = str2.split("").sort();
   let i = 0, j = 0, common = 0;
-  
+
   while (i < chars1.length && j < chars2.length) {
     if (chars1[i] === chars2[j]) {
       common++;
@@ -368,61 +393,80 @@ function countCommonChars(str1: string, str2: string): number {
       j++;
     }
   }
-  
+
   return common;
 }
 
 // Generate popular merchant results for empty queries
-async function generatePopularMerchantResults(userId: number, username: string): Promise<TelegramInlineQueryResult[]> {
+async function generatePopularMerchantResults(
+  userId: number,
+  username: string,
+): Promise<TelegramInlineQueryResult[]> {
   const { data: popularMerchants, error } = await supabase
-    .from('merchants')
-    .select('merchant_slug, merchant_name, tracking_link, base_mpd')
-    .order('base_mpd', { ascending: false })
+    .from("merchants")
+    .select("merchant_slug, merchant_name, tracking_link, base_mpd")
+    .order("base_mpd", { ascending: false })
     .limit(6);
-  
+
   if (error) throw error;
-  
+
   if (!popularMerchants || popularMerchants.length === 0) {
     return [{
       type: "article",
       id: "help",
       title: "🔍 Search for merchants to earn Max Miles",
-      description: "Type a merchant name after [@${BOT_USERNAME}](${BOT_DEEP_LINK})",
+      description:
+        "Type a merchant name after [@${BOT_USERNAME}](${BOT_DEEP_LINK})",
       input_message_content: {
         message_text: `🎯 Welcome to HeyMax Shop Bot!
 
 ` +
-                     `💡 **How to earn Max Miles:**
+          `💡 **How to earn Max Miles:**
 ` +
-                     `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name
+          `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name
 
 ` +
-                     `🛍️ **Popular merchants:** amazon, trip.com, klook, lazada, foodpanda
+          `🛍️ **Popular merchants:** amazon, trip.com, klook, lazada, foodpanda
 
 ` +
-                     `⚡ Generate personalized earning links instantly!
+          `⚡ Generate personalized earning links instantly!
 
 ` +
-                     `📋 **More details & terms**: https://heymax.ai`,
-        parse_mode: "Markdown"
-      }
+          `📋 **More details & terms**: https://heymax.ai`,
+        parse_mode: "Markdown",
+      },
     }];
   }
-  
+
   return await Promise.all(popularMerchants.map(async (merchant, index) => {
-    const affiliateData = await generateAffiliateLink(userId, merchant.merchant_slug);
-    
+    const affiliateData = await generateAffiliateLink(
+      userId,
+      merchant.merchant_slug,
+    );
+
     return {
       type: "article",
       id: `popular_${merchant.merchant_slug}_${index}`,
       title: `⭐ ${merchant.merchant_name}`,
-      description: `Top earner: up to ${merchant.base_mpd} Max Miles per $1 spent`,
+      description:
+        `Top earner: up to ${merchant.base_mpd} Max Miles per $1 spent`,
       input_message_content: {
-        message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
-        parse_mode: "Markdown"
+        message_text: await generateEnhancedBotResponse(
+          userId,
+          username,
+          merchant,
+          affiliateData,
+        ),
+        parse_mode: "Markdown",
       },
-      reply_markup: await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link),
-      thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+      reply_markup: await generateViralKeyboard(
+        userId,
+        username,
+        merchant,
+        affiliateData.affiliate_link,
+      ),
+      thumbnail_url:
+        "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png",
     };
   }));
 }
@@ -430,9 +474,9 @@ async function generatePopularMerchantResults(userId: number, username: string):
 // Enhanced affiliate link generation with UTM tracking
 async function generateAffiliateLink(userId: number, merchantSlug: string) {
   const { data: merchant, error } = await supabase
-    .from('merchants')
-    .select('*')
-    .eq('merchant_slug', merchantSlug)
+    .from("merchants")
+    .select("*")
+    .eq("merchant_slug", merchantSlug)
     .single();
 
   if (error || !merchant) {
@@ -440,21 +484,24 @@ async function generateAffiliateLink(userId: number, merchantSlug: string) {
   }
 
   // Replace placeholder with actual user ID
-  let affiliateLink = merchant.tracking_link.replace('{{USER_ID}}', userId.toString());
-  
+  let affiliateLink = merchant.tracking_link.replace(
+    "{{USER_ID}}",
+    userId.toString(),
+  );
+
   // Add comprehensive UTM parameters for tracking
   const utmParams = new URLSearchParams({
-    utm_source: 'telegram',
-    utm_medium: 'heymax_shop_bot',
-    utm_campaign: 'viral_social_commerce',
+    utm_source: "telegram",
+    utm_medium: "heymax_shop_bot",
+    utm_campaign: "viral_social_commerce",
     utm_content: merchantSlug,
     utm_term: `user_${userId}`,
     heymax_ref: `telegram_${userId}`,
-    timestamp: Date.now().toString()
+    timestamp: Date.now().toString(),
   });
-  
+
   // Add UTM parameters to the link
-  const separator = affiliateLink.includes('?') ? '&' : '?';
+  const separator = affiliateLink.includes("?") ? "&" : "?";
   const finalLink = `${affiliateLink}${separator}${utmParams.toString()}`;
 
   // Generate unique tracking ID for this specific link generation
@@ -463,74 +510,94 @@ async function generateAffiliateLink(userId: number, merchantSlug: string) {
   return {
     affiliate_link: finalLink,
     tracking_id: trackingId,
-    merchant: merchant
+    merchant: merchant,
   };
 }
 
 // Enhanced bot response with engaging UX and viral mechanics
-async function generateEnhancedBotResponse(userId: number, username: string, merchant: any, affiliateData: any): Promise<string> {
+async function generateEnhancedBotResponse(
+  userId: number,
+  username: string,
+  merchant: any,
+  affiliateData: any,
+): Promise<string> {
   const displayName = username ? `@${username}` : `User ${userId}`;
   const earnRate = merchant.base_mpd;
-  
+
   // Calculate potential earnings example
   const exampleSpend = earnRate >= 5 ? 100 : 200;
   const exampleEarnings = Math.round(exampleSpend * earnRate);
-  
+
   return `🎯 **${displayName}, your ${merchant.merchant_name} link is ready!**
 
 ` +
-         `✨ **Earn up to ${earnRate} Max Miles per $1** spent
+    `✨ **Earn up to ${earnRate} Max Miles per $1** spent
 ` +
-         `💰 Example: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles
+    `💰 Example: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles
 
 ` +
-         `🚀 **Your personalized link for ${displayName}:** 👇
+    `🚀 **Your personalized link for ${displayName}:** 👇
 
 ` +
-         `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!
+    `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!
 
 ` +
-         `💡 **Discover more**: Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon, trip.com, klook...
+    `💡 **Discover more**: Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon, trip.com, klook...
 
 ` +
-         `📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
+    `📋 **More details & terms**: https://heymax.ai/merchant/${
+      encodeURIComponent(merchant.merchant_name)
+    }`;
 }
 
 // Enhanced viral keyboard with better UX
-async function generateViralKeyboard(userId: number, username: string, merchant: any, affiliateLink: string) {
+async function generateViralKeyboard(
+  userId: number,
+  username: string,
+  merchant: any,
+  affiliateLink: string,
+) {
   const displayName = username ? `@${username}` : `User ${userId}`;
-  
+
   return {
     inline_keyboard: [
       [
         {
-          text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles (${displayName})`,
-          url: affiliateLink
-        }
+          text:
+            `🛍️ Shop ${merchant.merchant_name} & Earn Miles (${displayName})`,
+          url: affiliateLink,
+        },
       ],
       [
         {
           text: `⚡ Get MY Unique Link for ${merchant.merchant_name}`,
-          callback_data: `generate:${merchant.merchant_slug}:${userId}`
-        }
-      ]
-    ]
+          callback_data: `generate:${merchant.merchant_slug}:${userId}`,
+        },
+      ],
+    ],
   };
 }
 
 // Enhanced analytics tracking with detailed metrics
-async function trackEnhancedLinkGeneration(userId: number, merchants: any[], searchTerm: string, query: TelegramInlineQuery) {
+async function trackEnhancedLinkGeneration(
+  userId: number,
+  merchants: any[],
+  searchTerm: string,
+  query: TelegramInlineQuery,
+) {
   try {
     // Log enhanced link generation with more details
     const { error: insertError } = await supabase
-      .from('link_generations')
+      .from("link_generations")
       .insert({
         user_id: userId,
-        merchant_slug: merchants.length > 0 ? merchants[0].merchant_slug : 'no_results',
+        merchant_slug: merchants.length > 0
+          ? merchants[0].merchant_slug
+          : "no_results",
         generated_at: new Date().toISOString(),
         search_term: searchTerm,
         results_count: merchants.length,
-        chat_type: query.chat_type || 'unknown'
+        chat_type: query.chat_type || "unknown",
       });
 
     if (insertError) {
@@ -539,19 +606,18 @@ async function trackEnhancedLinkGeneration(userId: number, merchants: any[], sea
 
     // Update user link count
     const { data: currentUser } = await supabase
-      .from('users')
-      .select('link_count')
-      .eq('id', userId)
+      .from("users")
+      .select("link_count")
+      .eq("id", userId)
       .single();
-    
-    await supabase
-      .from('users')
-      .update({ 
-        link_count: (currentUser?.link_count || 0) + 1,
-        last_activity: new Date().toISOString()
-      })
-      .eq('id', userId);
 
+    await supabase
+      .from("users")
+      .update({
+        link_count: (currentUser?.link_count || 0) + 1,
+        last_activity: new Date().toISOString(),
+      })
+      .eq("id", userId);
   } catch (error) {
     console.error("Error in enhanced tracking:", error);
     // Don't throw - tracking failures shouldn't break core functionality
@@ -564,92 +630,119 @@ async function trackEnhancedLinkGeneration(userId: number, merchants: any[], sea
 async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const userId = callbackQuery.from.id;
   const username = callbackQuery.from.username || `user_${userId}`;
-  
+
   if (!callbackQuery.data) {
     await answerCallbackQuery(callbackQuery.id, "❌ Invalid button data", true);
     return;
   }
 
   try {
-    const [action, merchantSlug, originalUserId] = callbackQuery.data.split(':');
-    
-    if (action === 'generate') {
+    const [action, merchantSlug, originalUserId] = callbackQuery.data.split(
+      ":",
+    );
+
+    if (action === "generate") {
       // Ensure viral user exists in database
       await upsertUser(userId, username || `user_${userId}`);
-      
+
       // Get merchant information
       const { data: merchant, error } = await supabase
-        .from('merchants')
-        .select('*')
-        .eq('merchant_slug', merchantSlug)
+        .from("merchants")
+        .select("*")
+        .eq("merchant_slug", merchantSlug)
         .single();
-      
+
       if (error || !merchant) {
-        await answerCallbackQuery(callbackQuery.id, '❌ Merchant not found', true);
+        await answerCallbackQuery(
+          callbackQuery.id,
+          "❌ Merchant not found",
+          true,
+        );
         return;
       }
-      
+
       // Track viral interaction for analytics
       await trackViralInteraction(
-        parseInt(originalUserId), 
-        userId, 
-        merchantSlug, 
-        callbackQuery.message?.chat?.id
+        parseInt(originalUserId),
+        userId,
+        merchantSlug,
+        callbackQuery.message?.chat?.id,
       );
-      
+
       // Generate new affiliate link for viral user
       const affiliateData = await generateAffiliateLink(userId, merchantSlug);
-      
+
       // Create viral response message
-      const viralResponse = await generateViralBotResponse(userId, username, merchant, affiliateData);
-      const viralKeyboard = await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link);
-      
+      const viralResponse = await generateViralBotResponse(
+        userId,
+        username,
+        merchant,
+        affiliateData,
+      );
+      const viralKeyboard = await generateViralKeyboard(
+        userId,
+        username,
+        merchant,
+        affiliateData.affiliate_link,
+      );
+
       // Send new message to the chat
       if (callbackQuery.message?.chat?.id) {
-        await sendMessage(callbackQuery.message.chat.id, viralResponse, viralKeyboard);
+        await sendMessage(
+          callbackQuery.message.chat.id,
+          viralResponse,
+          viralKeyboard,
+        );
       }
-      
+
       // Answer the callback query with success
-      await answerCallbackQuery(callbackQuery.id, `✅ Your ${merchant.merchant_name} link generated!`, false);
-      
+      await answerCallbackQuery(
+        callbackQuery.id,
+        `✅ Your ${merchant.merchant_name} link generated!`,
+        false,
+      );
+
       // Update viral statistics
       await updateViralStats(userId, parseInt(originalUserId));
-      
     } else {
       await answerCallbackQuery(callbackQuery.id, "❌ Unknown action", true);
     }
-
   } catch (error) {
     console.error("Error handling callback query:", error);
-    await answerCallbackQuery(callbackQuery.id, "⚠️ Something went wrong, please try again", true);
+    await answerCallbackQuery(
+      callbackQuery.id,
+      "⚠️ Something went wrong, please try again",
+      true,
+    );
   }
 }
 
 // Handle regular messages (/start command and help)
 async function handleMessage(message: TelegramMessage) {
   if (!message.text) return;
-  
+
   const userId = message.from?.id;
   const username = message.from?.username;
-  
+
   if (!userId) return;
-  
+
   try {
     // Handle /start command
-    if (message.text.startsWith('/start')) {
+    if (message.text.startsWith("/start")) {
       await upsertUser(userId, username || `user_${userId}`);
       await handleStartCommand(message);
       return;
     }
-    
+
     // Handle help commands
-    if (message.text === '/help' || message.text.toLowerCase().includes('help')) {
+    if (
+      message.text === "/help" || message.text.toLowerCase().includes("help")
+    ) {
       await handleHelpCommand(message);
       return;
     }
-    
+
     // Log other messages for debugging (removed for production)
-    
   } catch (error) {
     console.error("Error handling message:", error);
   }
@@ -720,17 +813,22 @@ Ready to earn? Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon
 }
 
 // Track viral interactions for analytics
-async function trackViralInteraction(originalUserId: number, viralUserId: number, merchantSlug: string, chatId?: number) {
+async function trackViralInteraction(
+  originalUserId: number,
+  viralUserId: number,
+  merchantSlug: string,
+  chatId?: number,
+) {
   try {
     const { error } = await supabase
-      .from('viral_interactions')
+      .from("viral_interactions")
       .insert({
         original_user_id: originalUserId,
         viral_user_id: viralUserId,
         merchant_slug: merchantSlug,
         chat_id: chatId,
-        interaction_type: 'callback_query',
-        created_at: new Date().toISOString()
+        interaction_type: "callback_query",
+        created_at: new Date().toISOString(),
       });
 
     if (error) {
@@ -746,30 +844,34 @@ async function updateViralStats(viralUserId: number, originalUserId: number) {
   try {
     // Update the original user's viral trigger count
     await supabase
-      .rpc('update_user_stats', {
+      .rpc("update_user_stats", {
         p_user_id: originalUserId,
-        p_action: 'viral_triggered'
+        p_action: "viral_triggered",
       });
 
     // Update the viral user's link generation count
     await supabase
-      .rpc('update_user_stats', {
+      .rpc("update_user_stats", {
         p_user_id: viralUserId,
-        p_action: 'viral_generated'
+        p_action: "viral_generated",
       });
-
   } catch (error) {
     console.error("Error updating viral stats:", error);
   }
 }
 
 // Enhanced viral bot response for callback-generated links
-async function generateViralBotResponse(userId: number, username: string, merchant: any, affiliateData: any): Promise<string> {
+async function generateViralBotResponse(
+  userId: number,
+  username: string,
+  merchant: any,
+  affiliateData: any,
+): Promise<string> {
   const displayName = username ? `@${username}` : `User ${userId}`;
   const earnRate = merchant.base_mpd;
   const exampleSpend = earnRate >= 5 ? 100 : 200;
   const exampleEarnings = Math.round(exampleSpend * earnRate);
-  
+
   return `🎉 **${displayName}, your viral ${merchant.merchant_name} link is ready!**
 
 ✨ **Earn up to ${earnRate} Max Miles per $1** spent
@@ -783,7 +885,9 @@ async function generateViralBotResponse(userId: number, username: string, mercha
 
 Try more: [@${BOT_USERNAME}](${BOT_DEEP_LINK}) klook, amazon, trip.com...
 
-📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
+📋 **More details & terms**: https://heymax.ai/merchant/${
+    encodeURIComponent(merchant.merchant_name)
+  }`;
 }
 
 // Sprint 3: Analytics & Monitoring Implementation
@@ -798,65 +902,65 @@ async function getAnalyticsSummary() {
 
     // Get user metrics
     const { count: totalUsersCount } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
+      .from("users")
+      .select("*", { count: "exact", head: true });
 
     const { count: activeUsers24hCount } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .gte('last_activity', oneDayAgo.toISOString());
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("last_activity", oneDayAgo.toISOString());
 
     const { count: activeUsers7dCount } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .gte('last_activity', oneWeekAgo.toISOString());
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("last_activity", oneWeekAgo.toISOString());
 
     // Get link generation metrics
     const { count: totalLinksCount } = await supabase
-      .from('link_generations')
-      .select('*', { count: 'exact', head: true });
+      .from("link_generations")
+      .select("*", { count: "exact", head: true });
 
     const { count: links24hCount } = await supabase
-      .from('link_generations')
-      .select('*', { count: 'exact', head: true })
-      .gte('generated_at', oneDayAgo.toISOString());
+      .from("link_generations")
+      .select("*", { count: "exact", head: true })
+      .gte("generated_at", oneDayAgo.toISOString());
 
     const { count: links7dCount } = await supabase
-      .from('link_generations')
-      .select('*', { count: 'exact', head: true })
-      .gte('generated_at', oneWeekAgo.toISOString());
+      .from("link_generations")
+      .select("*", { count: "exact", head: true })
+      .gte("generated_at", oneWeekAgo.toISOString());
 
     // Get viral interaction metrics
     const { count: totalViralInteractionsCount } = await supabase
-      .from('viral_interactions')
-      .select('*', { count: 'exact', head: true });
+      .from("viral_interactions")
+      .select("*", { count: "exact", head: true });
 
     const { count: viralInteractions7dCount } = await supabase
-      .from('viral_interactions')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', oneWeekAgo.toISOString());
+      .from("viral_interactions")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", oneWeekAgo.toISOString());
 
     // Get search analytics
     const { count: totalSearchesCount } = await supabase
-      .from('search_analytics')
-      .select('*', { count: 'exact', head: true })
-      .gte('query_timestamp', oneWeekAgo.toISOString());
+      .from("search_analytics")
+      .select("*", { count: "exact", head: true })
+      .gte("query_timestamp", oneWeekAgo.toISOString());
 
     const { data: avgResultsPerSearch } = await supabase
-      .from('search_analytics')
-      .select('results_count')
-      .gte('query_timestamp', oneWeekAgo.toISOString());
+      .from("search_analytics")
+      .select("results_count")
+      .gte("query_timestamp", oneWeekAgo.toISOString());
 
     // Calculate viral coefficient using the database function
     const { data: viralCoefficientResult } = await supabase
-      .rpc('calculate_viral_coefficient', { days_back: 7 });
+      .rpc("calculate_viral_coefficient", { days_back: 7 });
 
     // Get top merchants by activity
     const { data: topMerchants } = await supabase
-      .from('link_generations')
-      .select('merchant_slug')
-      .gte('generated_at', oneWeekAgo.toISOString())
-      .not('merchant_slug', 'is', null);
+      .from("link_generations")
+      .select("merchant_slug")
+      .gte("generated_at", oneWeekAgo.toISOString())
+      .not("merchant_slug", "is", null);
 
     // Calculate merchant popularity
     const merchantCounts = topMerchants?.reduce((acc: any, item) => {
@@ -865,20 +969,23 @@ async function getAnalyticsSummary() {
     }, {}) || {};
 
     const topMerchantsRanked = Object.entries(merchantCounts)
-      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .sort(([, a], [, b]) => (b as number) - (a as number))
       .slice(0, 10)
       .map(([merchant, count]) => ({ merchant, count }));
 
     // Calculate average search results
-    const avgResults = avgResultsPerSearch && avgResultsPerSearch.length > 0 
-      ? avgResultsPerSearch.reduce((sum, item) => sum + (item.results_count || 0), 0) / avgResultsPerSearch.length 
+    const avgResults = avgResultsPerSearch && avgResultsPerSearch.length > 0
+      ? avgResultsPerSearch.reduce(
+        (sum, item) => sum + (item.results_count || 0),
+        0,
+      ) / avgResultsPerSearch.length
       : 0;
 
     // Performance metrics
     const performanceMetrics = {
       avg_response_time_ms: 250, // This would be measured in production
       uptime_percentage: 99.9,
-      error_rate_percentage: 0.1
+      error_rate_percentage: 0.1,
     };
 
     return {
@@ -886,39 +993,38 @@ async function getAnalyticsSummary() {
       user_metrics: {
         total_users: totalUsersCount || 0,
         active_users_24h: activeUsers24hCount || 0,
-        active_users_7d: activeUsers7dCount || 0
+        active_users_7d: activeUsers7dCount || 0,
       },
       link_metrics: {
         total_links_generated: totalLinksCount || 0,
         links_generated_24h: links24hCount || 0,
-        links_generated_7d: links7dCount || 0
+        links_generated_7d: links7dCount || 0,
       },
       viral_metrics: {
         total_viral_interactions: totalViralInteractionsCount || 0,
         viral_interactions_7d: viralInteractions7dCount || 0,
-        viral_coefficient_7d: viralCoefficientResult || 0
+        viral_coefficient_7d: viralCoefficientResult || 0,
       },
       search_metrics: {
         total_searches_7d: totalSearchesCount || 0,
-        avg_results_per_search: Math.round(avgResults * 100) / 100
+        avg_results_per_search: Math.round(avgResults * 100) / 100,
       },
       top_merchants_7d: topMerchantsRanked,
       performance_metrics: performanceMetrics,
       health_status: {
         database_connection: "healthy",
         telegram_api: "healthy",
-        overall_status: "operational"
-      }
+        overall_status: "operational",
+      },
     };
-
   } catch (error) {
     console.error("Error generating analytics summary:", error);
     return {
       error: "Failed to generate analytics",
       timestamp: new Date().toISOString(),
       health_status: {
-        overall_status: "degraded"
-      }
+        overall_status: "degraded",
+      },
     };
   }
 }
@@ -929,9 +1035,12 @@ async function checkFunctionInvocationLimits() {
     // This would integrate with Supabase monitoring APIs in production
     // For now, we'll track basic metrics
     const { count: recentInvocationsCount } = await supabase
-      .from('link_generations')
-      .select('*', { count: 'exact', head: true })
-      .gte('generated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      .from("link_generations")
+      .select("*", { count: "exact", head: true })
+      .gte(
+        "generated_at",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      );
 
     const monthlyInvocations = (recentInvocationsCount || 0) * 2; // Rough estimate
     const freetierLimit = 500000; // Supabase free tier limit
@@ -942,15 +1051,14 @@ async function checkFunctionInvocationLimits() {
       free_tier_limit: freetierLimit,
       usage_percentage: Math.round(usagePercentage * 100) / 100,
       warning_threshold_reached: usagePercentage > 80,
-      critical_threshold_reached: usagePercentage > 95
+      critical_threshold_reached: usagePercentage > 95,
     };
-
   } catch (error) {
     console.error("Error checking function limits:", error);
     return {
       error: "Failed to check limits",
       warning_threshold_reached: false,
-      critical_threshold_reached: false
+      critical_threshold_reached: false,
     };
   }
 }
@@ -964,43 +1072,42 @@ async function getViralCoefficientTrend(days: number = 7) {
       users: number;
       viral_interactions: number;
     }> = [];
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const dayStart = new Date();
       dayStart.setDate(dayStart.getDate() - i);
       dayStart.setHours(0, 0, 0, 0);
-      
+
       const dayEnd = new Date(dayStart);
       dayEnd.setHours(23, 59, 59, 999);
-      
-    // Get daily users
-    const { count: dailyUsersCount } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .lte('first_seen', dayEnd.toISOString())
-      .gte('last_activity', dayStart.toISOString());
-    
-    // Get daily viral interactions
-    const { count: dailyViralCount } = await supabase
-      .from('viral_interactions')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', dayStart.toISOString())
-      .lt('created_at', dayEnd.toISOString());
-    
-    const coefficient = (dailyUsersCount || 0) > 0 
-      ? (dailyViralCount || 0) / (dailyUsersCount || 1) 
-      : 0;
-    
-    dailyCoefficients.push({
-      date: dayStart.toISOString().split('T')[0],
-      coefficient: Math.round(coefficient * 100) / 100,
-      users: dailyUsersCount || 0,
-      viral_interactions: dailyViralCount || 0
-    });
+
+      // Get daily users
+      const { count: dailyUsersCount } = await supabase
+        .from("users")
+        .select("*", { count: "exact", head: true })
+        .lte("first_seen", dayEnd.toISOString())
+        .gte("last_activity", dayStart.toISOString());
+
+      // Get daily viral interactions
+      const { count: dailyViralCount } = await supabase
+        .from("viral_interactions")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", dayStart.toISOString())
+        .lt("created_at", dayEnd.toISOString());
+
+      const coefficient = (dailyUsersCount || 0) > 0
+        ? (dailyViralCount || 0) / (dailyUsersCount || 1)
+        : 0;
+
+      dailyCoefficients.push({
+        date: dayStart.toISOString().split("T")[0],
+        coefficient: Math.round(coefficient * 100) / 100,
+        users: dailyUsersCount || 0,
+        viral_interactions: dailyViralCount || 0,
+      });
     }
-    
+
     return dailyCoefficients;
-    
   } catch (error) {
     console.error("Error calculating viral coefficient trend:", error);
     return [];
@@ -1013,18 +1120,25 @@ async function getPerformanceMetrics() {
     // In production, this would integrate with monitoring tools
     // For MVP, we'll return basic metrics
     const { data: recentQueries } = await supabase
-      .from('search_analytics')
-      .select('response_time_ms')
-      .gte('query_timestamp', new Date(Date.now() - 60 * 60 * 1000).toISOString())
-      .not('response_time_ms', 'is', null);
+      .from("search_analytics")
+      .select("response_time_ms")
+      .gte(
+        "query_timestamp",
+        new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      )
+      .not("response_time_ms", "is", null);
 
-    const responseTimes = recentQueries?.map(q => q.response_time_ms || 0) || [];
-    const avgResponseTime = responseTimes.length > 0 
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
+    const responseTimes = recentQueries?.map((q) => q.response_time_ms || 0) ||
+      [];
+    const avgResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) /
+        responseTimes.length
       : 0;
 
-    const p95ResponseTime = responseTimes.length > 0 
-      ? responseTimes.sort((a, b) => a - b)[Math.floor(responseTimes.length * 0.95)] 
+    const p95ResponseTime = responseTimes.length > 0
+      ? responseTimes.sort((a, b) =>
+        a - b
+      )[Math.floor(responseTimes.length * 0.95)]
       : 0;
 
     return {
@@ -1032,23 +1146,26 @@ async function getPerformanceMetrics() {
       p95_response_time_ms: Math.round(p95ResponseTime),
       total_requests_1h: responseTimes.length,
       performance_target_met: avgResponseTime < 1000, // <1s target
-      health_status: avgResponseTime < 1000 ? "healthy" : "degraded"
+      health_status: avgResponseTime < 1000 ? "healthy" : "degraded",
     };
-
   } catch (error) {
     console.error("Error getting performance metrics:", error);
     return {
       error: "Failed to get performance metrics",
-      health_status: "unknown"
+      health_status: "unknown",
     };
   }
 }
 
 // Telegram API Operations
 
-async function sendInlineQueryAnswer(queryId: string, results: TelegramInlineQueryResult[]) {
-  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerInlineQuery`;
-  
+async function sendInlineQueryAnswer(
+  queryId: string,
+  results: TelegramInlineQueryResult[],
+) {
+  const telegramApiUrl =
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerInlineQuery`;
+
   const response = await fetch(telegramApiUrl, {
     method: "POST",
     headers: {
@@ -1070,9 +1187,14 @@ async function sendInlineQueryAnswer(queryId: string, results: TelegramInlineQue
 }
 
 // Answer callback query from viral buttons
-async function answerCallbackQuery(callbackQueryId: string, text: string, showAlert: boolean = false) {
-  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`;
-  
+async function answerCallbackQuery(
+  callbackQueryId: string,
+  text: string,
+  showAlert: boolean = false,
+) {
+  const telegramApiUrl =
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`;
+
   const response = await fetch(telegramApiUrl, {
     method: "POST",
     headers: {
@@ -1081,7 +1203,7 @@ async function answerCallbackQuery(callbackQueryId: string, text: string, showAl
     body: JSON.stringify({
       callback_query_id: callbackQueryId,
       text: text,
-      show_alert: showAlert
+      show_alert: showAlert,
     }),
   });
 
@@ -1094,19 +1216,20 @@ async function answerCallbackQuery(callbackQueryId: string, text: string, showAl
 
 // Send message to chat (for viral responses and help)
 async function sendMessage(chatId: number, text: string, replyMarkup?: any) {
-  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  
+  const telegramApiUrl =
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
   const payload: any = {
     chat_id: chatId,
     text: text,
     parse_mode: "Markdown",
-    disable_web_page_preview: true
+    disable_web_page_preview: true,
   };
-  
+
   if (replyMarkup) {
     payload.reply_markup = replyMarkup;
   }
-  
+
   const response = await fetch(telegramApiUrl, {
     method: "POST",
     headers: {
@@ -1120,6 +1243,6 @@ async function sendMessage(chatId: number, text: string, replyMarkup?: any) {
     console.error("Telegram sendMessage error:", error);
     throw new Error(`Telegram API error: ${response.status}`);
   }
-  
+
   return await response.json();
 }

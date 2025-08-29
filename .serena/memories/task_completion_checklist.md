@@ -1,6 +1,7 @@
 # Task Completion Checklist
 
 ## Before Code Commit
+
 1. **Code Quality**
    - [ ] Run code formatter: `black src/ tests/`
    - [ ] Run linter: `flake8 src/ tests/` or `pylint src/`
@@ -19,6 +20,7 @@
    - [ ] Update API documentation if endpoints change
 
 ## Bot-Specific Checks
+
 1. **Telegram Integration**
    - [ ] Test bot commands in development environment
    - [ ] Verify inline query responses format correctly
@@ -38,6 +40,7 @@
    - [ ] Rate limiting implemented for API calls
 
 ## Deployment Preparation
+
 1. **Environment Configuration**
    - [ ] Environment variables documented
    - [ ] Configuration validation implemented
@@ -49,6 +52,7 @@
    - [ ] User interaction analytics (privacy-compliant)
 
 ## Git Workflow
+
 1. **Commit Standards**
    - [ ] Descriptive commit message
    - [ ] Single logical change per commit

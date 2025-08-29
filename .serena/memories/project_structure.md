@@ -1,6 +1,7 @@
 # Project Structure
 
 ## Current Structure
+
 ```
 heymax_shop_bot/
 ├── .serena/
@@ -11,6 +12,7 @@ heymax_shop_bot/
 ```
 
 ## Planned Structure
+
 ```
 heymax_shop_bot/
 ├── src/
@@ -50,6 +52,7 @@ heymax_shop_bot/
 ```
 
 ## Key Directories
+
 - **src/**: Main application code
 - **src/bot/**: Telegram bot specific functionality
 - **src/heymax/**: HeyMax API integration and affiliate logic

@@ -1,6 +1,7 @@
 # Suggested Development Commands
 
 ## Environment Setup
+
 ```bash
 # Create virtual environment
 python3 -m venv venv
@@ -14,6 +15,7 @@ pip install -r requirements-dev.txt
 ```
 
 ## Development Workflow
+
 ```bash
 # Run the bot locally
 python main.py
@@ -29,6 +31,7 @@ pytest --cov=src tests/
 ```
 
 ## Code Quality
+
 ```bash
 # Format code (when implemented)
 black src/ tests/
@@ -43,6 +46,7 @@ mypy src/
 ```
 
 ## Git Workflow
+
 ```bash
 # Standard git operations
 git status
@@ -55,6 +59,7 @@ git checkout -b feature/bot-inline-queries
 ```
 
 ## System Utilities (macOS)
+
 ```bash
 # Directory navigation
 ls -la
@@ -73,6 +78,7 @@ kill -9 PID
 ```
 
 ## Telegram Bot Testing
+
 ```bash
 # Set webhook (production)
 curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" -d "url=https://yourdomain.com/webhook"

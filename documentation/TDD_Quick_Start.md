@@ -58,21 +58,23 @@ npm run pipeline
 ### **Example: US1.1 - Database Schema Setup**
 
 #### **1. RED Phase: Write Failing Tests**
+
 ```typescript
 // tests/unit/database.test.ts
 Deno.test("users table should exist", async () => {
   const result = await supabase
-    .from('users')
-    .select('count', { count: 'exact' })
-  
-  assertEquals(result.error, null)
-})
+    .from("users")
+    .select("count", { count: "exact" });
+
+  assertEquals(result.error, null);
+});
 
 // Run: deno test --allow-env --allow-net
 // Expected: ❌ Test fails (table doesn't exist)
 ```
 
 #### **2. GREEN Phase: Make Tests Pass**
+
 ```sql
 -- supabase/migrations/001_create_users.sql
 CREATE TABLE users (
@@ -88,6 +90,7 @@ CREATE TABLE users (
 ```
 
 #### **3. REFACTOR Phase: Improve Code**
+
 ```sql
 -- Add indexes and constraints
 CREATE INDEX idx_users_username ON users(username);
@@ -100,13 +103,15 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ## 🎯 **Sprint-by-Sprint TDD Guide**
 
 ### **Sprint 1: Foundation (Week 1)**
+
 - **Day 1**: TDD framework setup + database tests
 - **Day 2**: Edge function structure with TDD
 - **Day 3**: Telegram webhook testing
 - **Day 4**: Merchant dataset with TDD
 - **Day 5**: Integration testing + refactoring
 
-### **Sprint 2: Core Features (Week 2)**  
+### **Sprint 2: Core Features (Week 2)**
+
 - **Day 1**: Inline query TDD implementation
 - **Day 2**: Affiliate link generation with tests
 - **Day 3**: User tracking TDD
@@ -114,6 +119,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 - **Day 5**: Integration testing + performance validation
 
 ### **Sprint 3: Viral & Launch (Week 3)**
+
 - **Day 1**: Viral button TDD implementation
 - **Day 2**: Analytics testing framework
 - **Day 3**: Load testing + performance validation
@@ -123,18 +129,21 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ## ✅ **TDD Quality Gates**
 
 ### **Code Coverage Requirements**
+
 - **Unit Tests**: >90% coverage for critical components
 - **Integration Tests**: >80% coverage for API endpoints
 - **E2E Tests**: >70% coverage for user workflows
 - **Performance Tests**: 100% coverage for viral scenarios
 
 ### **Test Performance Standards**
+
 - **Unit Test Suite**: <10 seconds execution time
-- **Integration Suite**: <20 seconds execution time  
+- **Integration Suite**: <20 seconds execution time
 - **Full Test Suite**: <30 seconds total runtime
 - **Performance Tests**: <60 seconds for load testing
 
 ### **Quality Metrics**
+
 - **Flaky Test Rate**: <1% (tests must be reliable)
 - **Test Coverage**: >80% overall, >90% critical paths
 - **Code Quality**: ESLint + TypeScript strict mode passing
@@ -143,6 +152,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ## 🔄 **TDD Daily Workflow**
 
 ### **Morning Routine (Start of development)**
+
 ```bash
 1. Pull latest changes: git pull origin main
 2. Run full test suite: npm run test
@@ -152,6 +162,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ```
 
 ### **Development Cycle (During development)**
+
 ```bash
 1. Write failing test (RED): deno test [specific-test] 
 2. Write minimum code (GREEN): Make test pass
@@ -161,6 +172,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ```
 
 ### **End of Day (Before finishing)**
+
 ```bash
 1. Run full test suite: npm run test
 2. Check performance: npm run test:performance  
@@ -172,6 +184,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ## 🚨 **Common TDD Anti-Patterns to Avoid**
 
 ### **❌ Don't Do This**
+
 - Writing implementation code before tests
 - Writing tests that always pass (false positives)
 - Ignoring the refactor phase
@@ -179,7 +192,8 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 - Slow tests that break the TDD flow
 - Mocking everything (integration tests need real dependencies)
 
-### **✅ Do This Instead**  
+### **✅ Do This Instead**
+
 - Always write tests first (RED phase)
 - Write tests that can fail meaningfully
 - Refactor regularly to improve code quality
@@ -190,6 +204,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 ## 📊 **TDD Success Metrics Dashboard**
 
 ### **Daily Metrics to Track**
+
 - **Test Coverage**: Monitor overall and component-level coverage
 - **Test Performance**: Track test suite execution time
 - **Build Success Rate**: Monitor CI/CD pipeline success rate
@@ -197,6 +212,7 @@ ALTER TABLE users ADD CONSTRAINT check_link_count_positive CHECK (link_count >= 
 - **Development Velocity**: Measure feature completion with TDD
 
 ### **Weekly Review Questions**
+
 1. Are tests providing confidence for refactoring?
 2. Is test coverage sufficient for viral growth scenarios?
 3. Are tests catching bugs before production?
@@ -220,8 +236,11 @@ npm run setup:local
 npm run tdd:start
 ```
 
-**Next Steps**: Follow Sprint 1 TDD workflow in `MVP_Implementation_Workflow.md` with test-first approach for database schema setup.
+**Next Steps**: Follow Sprint 1 TDD workflow in `MVP_Implementation_Workflow.md`
+with test-first approach for database schema setup.
 
 ---
 
-*This guide provides everything needed to start TDD development for the HeyMax_shop_bot MVP. Each sprint builds on the previous with increasing complexity and confidence.*
+_This guide provides everything needed to start TDD development for the
+HeyMax_shop_bot MVP. Each sprint builds on the previous with increasing
+complexity and confidence._

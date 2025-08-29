@@ -3,6 +3,7 @@
 ## Quick Start (5 minutes)
 
 ### Prerequisites
+
 1. **Docker Desktop** - Required for Supabase local development
    ```bash
    # Install Docker Desktop from: https://docs.docker.com/desktop/
@@ -17,6 +18,7 @@
 ### TDD Development Workflow
 
 #### 1. Start Local Development Environment
+
 ```bash
 # Start Supabase local instance (requires Docker)
 supabase start
@@ -29,6 +31,7 @@ supabase start
 ```
 
 #### 2. Run TDD Tests
+
 ```bash
 # Run all tests (should pass after Supabase is running)
 npm run test
@@ -41,6 +44,7 @@ npm run tdd:start
 ```
 
 #### 3. TDD Cycle Commands
+
 ```bash
 # RED: Run failing tests
 export PATH="$HOME/.deno/bin:$PATH" && deno test --allow-env --allow-net --allow-read --allow-write tests/unit/database.test.ts
@@ -53,6 +57,7 @@ npm run test:coverage
 ```
 
 ## Project Structure
+
 ```
 heymax_shop_bot/
 ├── tests/
@@ -71,6 +76,7 @@ heymax_shop_bot/
 ## TDD Status
 
 ### ✅ Completed
+
 - Development environment setup (Deno, Supabase CLI, Node.js)
 - Project structure following TDD patterns
 - Database schema with test-first approach
@@ -78,6 +84,7 @@ heymax_shop_bot/
 - Database migrations and seed data ready
 
 ### 🚧 Next Steps (Requires Docker Desktop)
+
 1. Install Docker Desktop and start Docker daemon
 2. Run `supabase start` to launch local development environment
 3. Verify tests pass (GREEN phase)
@@ -85,12 +92,14 @@ heymax_shop_bot/
 5. Implement Telegram webhook with TDD cycles
 
 ## Performance Targets (Validated by Tests)
+
 - Database queries: <1 second response time
 - Test suite: <30 seconds total execution
 - Unit tests: <10 seconds execution
 - Coverage: >80% overall, >90% critical components
 
 ## Development Commands
+
 ```bash
 # Development workflow
 npm run tdd:start        # Start TDD watch mode

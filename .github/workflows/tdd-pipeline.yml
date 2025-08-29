@@ -5,19 +5,19 @@ name: TDD Pipeline
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [main, develop, feature/*]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       run_performance_tests:
-        description: 'Run performance tests'
+        description: "Run performance tests"
         required: false
-        default: 'true'
+        default: "true"
         type: boolean
 
 env:
-  DENO_VERSION: v1.37.0
+  DENO_VERSION: v2.4.5
   SUPABASE_VERSION: 2.39.2
   MIN_COVERAGE_OVERALL: 80
   MIN_COVERAGE_CRITICAL: 90
@@ -31,7 +31,7 @@ jobs:
     outputs:
       cache-hit: ${{ steps.cache-deno.outputs.cache-hit }}
       test-matrix: ${{ steps.test-matrix.outputs.matrix }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,9 +39,10 @@ jobs:
           fetch-depth: 2 # Needed for change detection
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
+          cache: true
 
       - name: Cache Deno dependencies
         id: cache-deno
@@ -63,24 +64,24 @@ jobs:
       - name: Validate project structure
         run: |
           echo "🔍 Validating project structure..."
-          
+
           # Check required directories for HeyMax Shop Bot
           if [ ! -d "tests" ]; then
             echo "❌ tests/ directory not found"
             exit 1
           fi
-          
+
           if [ ! -d "supabase/functions" ]; then
             echo "❌ supabase/functions/ directory not found"
             exit 1
           fi
-          
+
           # Check main bot file
           if [ ! -f "supabase/functions/telegram-bot/index.ts" ]; then
             echo "❌ supabase/functions/telegram-bot/index.ts not found"
             exit 1
           fi
-          
+
           echo "✅ Project structure validation passed"
 
       - name: Generate test matrix
@@ -101,13 +102,13 @@ jobs:
     name: Code Quality Checks
     runs-on: ubuntu-latest
     needs: setup
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
@@ -153,13 +154,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup, lint]
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
@@ -176,7 +177,7 @@ jobs:
           echo "🧪 Setting up unit test environment..."
           # Create minimal test environment for unit tests
           mkdir -p coverage
-          
+
           # Set test environment variables
           echo "ENVIRONMENT=test" >> $GITHUB_ENV
           echo "LOG_LEVEL=error" >> $GITHUB_ENV
@@ -184,7 +185,7 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           echo "🧪 Running unit tests with coverage..."
-          
+
           # Run unit tests with timeout
           timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
@@ -192,19 +193,19 @@ jobs:
             --reporter=verbose \
             tests/unit/ \
             || (echo "❌ Unit tests failed or timed out" && exit 1)
-          
+
           echo "✅ Unit tests completed"
 
       - name: Generate coverage report
         run: |
           echo "📊 Generating coverage report..."
-          
+
           # Generate LCOV report
           deno coverage coverage/ --lcov > coverage/lcov.info
-          
+
           # Generate HTML report
           deno coverage coverage/ --html
-          
+
           # Extract coverage percentage
           COVERAGE=$(deno coverage coverage/ | grep -oE '[0-9]+\.[0-9]+%' | tail -1 | sed 's/%//')
           echo "UNIT_COVERAGE=$COVERAGE" >> $GITHUB_ENV
@@ -213,14 +214,14 @@ jobs:
       - name: Validate coverage requirements
         run: |
           echo "🎯 Validating coverage requirements..."
-          
+
           COVERAGE=${UNIT_COVERAGE%.*} # Remove decimal part for comparison
-          
+
           if [ "$COVERAGE" -lt "$MIN_COVERAGE_OVERALL" ]; then
             echo "❌ Unit test coverage $COVERAGE% below required $MIN_COVERAGE_OVERALL%"
             exit 1
           fi
-          
+
           echo "✅ Coverage requirements met: $COVERAGE%"
 
       - name: Upload coverage reports
@@ -246,7 +247,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup, lint]
     timeout-minutes: 15
-    
+
     services:
       postgres:
         image: postgres:13
@@ -266,7 +267,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
@@ -277,10 +278,10 @@ jobs:
         run: |
           echo "🗄️ Starting Supabase local development..."
           npx supabase start --exclude gotrue,realtime,storage-api,imgproxy,inbucket,edge-runtime
-          
+
           # Wait for services to be ready
           sleep 10
-          
+
           # Verify connection
           curl -s http://localhost:54321/rest/v1/ || (echo "❌ Supabase not ready" && exit 1)
 
@@ -302,14 +303,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN_TEST }}
         run: |
           echo "🧪 Running integration tests..."
-          
+
           timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
             --coverage=integration-coverage/ \
             --reporter=verbose \
             tests/integration/ \
             || (echo "❌ Integration tests failed or timed out" && exit 1)
-          
+
           echo "✅ Integration tests completed"
 
       - name: Generate integration coverage
@@ -336,13 +337,13 @@ jobs:
     needs: [setup, unit-tests]
     if: github.event_name == 'push' || github.event.inputs.run_performance_tests == 'true'
     timeout-minutes: 20
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
@@ -354,10 +355,10 @@ jobs:
       - name: Setup performance test environment
         run: |
           echo "⚡ Setting up performance test environment..."
-          
+
           # Create performance test configuration
           mkdir -p performance-results
-          
+
           # Set performance test variables
           echo "PERFORMANCE_TEST_DURATION=60" >> $GITHUB_ENV
           echo "PERFORMANCE_CONCURRENT_USERS=50" >> $GITHUB_ENV
@@ -366,33 +367,33 @@ jobs:
       - name: Run performance benchmarks
         run: |
           echo "⚡ Running performance benchmarks..."
-          
+
           # Run existing performance tests
           deno test \
             --allow-all \
             --reporter=verbose \
             tests/performance/ \
             > performance-results/benchmarks.txt
-          
+
           echo "✅ Performance benchmarks completed"
 
       - name: Run load tests
         run: |
           echo "🔥 Running load tests..."
-          
+
           # Run existing performance tests (already includes load tests)
           timeout 300 deno test \
             --allow-all \
             --reporter=verbose \
             tests/performance/performance-validation.test.ts \
             || echo "⚠️ Performance tests may require live server - continuing"
-          
+
           echo "✅ Load tests completed"
 
       - name: Analyze performance results
         run: |
           echo "📈 Analyzing performance results..."
-          
+
           # Simple performance analysis
           if [ -f "performance-results/benchmarks.txt" ]; then
             echo "Performance test results available"
@@ -400,7 +401,7 @@ jobs:
           else
             echo "⚠️ No performance results found - tests may have been skipped"
           fi
-          
+
           echo "✅ Performance analysis completed"
 
       - name: Upload performance results
@@ -415,38 +416,38 @@ jobs:
     name: Security Checks
     runs-on: ubuntu-latest
     needs: setup
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
       - name: Security audit
         run: |
           echo "🔒 Running security audit..."
-          
+
           # Check for known vulnerable packages
           deno info --json supabase/functions/telegram-bot/index.ts | \
             jq -r '.modules[].specifier' | \
             grep -E "^https://" | \
             sort -u > /tmp/deps.txt
-          
+
           echo "✅ Dependency security check completed"
 
       - name: Secret scanning
         run: |
           echo "🕵️ Scanning for secrets..."
-          
+
           # Basic secret patterns
           if grep -r -E "(password|secret|key|token).*=.*['\"][^'\"]{8,}" . --include="*.ts" --include="*.js" --exclude-dir=node_modules; then
             echo "❌ Potential secrets found in code"
             exit 1
           fi
-          
+
           echo "✅ No secrets found in code"
 
   # Job 7: Build and Deployment Test
@@ -455,13 +456,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests, integration-tests]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
@@ -471,16 +472,16 @@ jobs:
       - name: Build edge function
         run: |
           echo "🔨 Building edge function..."
-          
+
           # Validate edge function structure
           if [ ! -f "supabase/functions/telegram-bot/index.ts" ]; then
             echo "❌ Edge function not found"
             exit 1
           fi
-          
+
           # Type check edge function
           deno check supabase/functions/telegram-bot/index.ts
-          
+
           echo "✅ Edge function build completed"
 
       - name: Test deployment configuration
@@ -489,17 +490,17 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_TEST }}
         run: |
           echo "🚀 Testing deployment configuration..."
-          
+
           # Validate deployment configuration
           npx supabase link --project-ref $SUPABASE_PROJECT_REF
-          
+
           # Dry run deployment
           echo "✅ Deployment configuration valid"
 
       - name: Run smoke tests
         run: |
           echo "💨 Running smoke tests..."
-          
+
           # Basic smoke test - check if edge function compiles
           echo "✅ Edge function compilation verified"
           echo "✅ Smoke tests passed"
@@ -508,9 +509,15 @@ jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, performance-tests, security, build-test]
+    needs: [
+      unit-tests,
+      integration-tests,
+      performance-tests,
+      security,
+      build-test,
+    ]
     if: always()
-    
+
     steps:
       - name: Download coverage reports
         uses: actions/download-artifact@v4
@@ -520,20 +527,20 @@ jobs:
       - name: Aggregate test results
         run: |
           echo "📊 Aggregating test results..."
-          
+
           # Check if all required jobs passed
           UNIT_TESTS="${{ needs.unit-tests.result }}"
           INTEGRATION_TESTS="${{ needs.integration-tests.result }}"
           PERFORMANCE_TESTS="${{ needs.performance-tests.result }}"
           SECURITY="${{ needs.security.result }}"
           BUILD_TEST="${{ needs.build-test.result }}"
-          
+
           echo "Unit Tests: $UNIT_TESTS"
           echo "Integration Tests: $INTEGRATION_TESTS"
           echo "Performance Tests: $PERFORMANCE_TESTS"
           echo "Security: $SECURITY"
           echo "Build Test: $BUILD_TEST"
-          
+
           # Determine overall status
           if [[ "$UNIT_TESTS" != "success" ]] || \
              [[ "$INTEGRATION_TESTS" != "success" ]] || \
@@ -541,7 +548,7 @@ jobs:
             echo "❌ Quality gate failed - core tests failed"
             exit 1
           fi
-          
+
           # Performance and build tests are required for main branch
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             if [[ "$PERFORMANCE_TESTS" != "success" ]] || [[ "$BUILD_TEST" != "success" ]]; then
@@ -549,42 +556,42 @@ jobs:
               exit 1
             fi
           fi
-          
+
           echo "✅ Quality gate passed - all tests successful"
 
       - name: Generate quality report
         run: |
           echo "📋 Generating quality report..."
-          
+
           cat > quality-report.md << EOF
           # Quality Report - $(date)
-          
+
           ## Test Results
           - Unit Tests: ${{ needs.unit-tests.result }} ✅
           - Integration Tests: ${{ needs.integration-tests.result }} ✅
           - Performance Tests: ${{ needs.performance-tests.result }} ✅
           - Security Checks: ${{ needs.security.result }} ✅
           - Build Tests: ${{ needs.build-test.result }} ✅
-          
+
           ## Coverage Summary
           - Overall coverage meets minimum requirements
           - Critical components have enhanced coverage
-          
+
           ## Performance Summary
           - Response time requirements met
           - Load testing passed
           - Memory usage within limits
-          
+
           ## Security Summary
           - No secrets detected in code
           - Dependencies security verified
           - Basic vulnerability scanning passed
-          
+
           ## Deployment Readiness
           - Edge function builds successfully
           - Configuration validated
           - Smoke tests passed
-          
+
           ✅ **All quality gates passed - Ready for deployment**
           EOF
 
@@ -602,7 +609,7 @@ jobs:
     needs: quality-gate
     if: github.ref == 'refs/heads/main' && needs.quality-gate.result == 'success'
     environment: staging
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -616,10 +623,10 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_STAGING }}
         run: |
           echo "🚀 Deploying to staging..."
-          
+
           npx supabase link --project-ref $SUPABASE_PROJECT_REF
           npx supabase functions deploy telegram-bot
-          
+
           echo "✅ Deployment to staging completed"
 
       - name: Post-deployment verification
@@ -627,21 +634,21 @@ jobs:
           STAGING_WEBHOOK_URL: ${{ secrets.STAGING_WEBHOOK_URL }}
         run: |
           echo "✅ Running post-deployment verification..."
-          
+
           # Health check
           curl -f -s "$STAGING_WEBHOOK_URL/health" || (echo "❌ Health check failed" && exit 1)
-          
+
           # Basic functionality verification
           echo "✅ Health check passed"
           echo "✅ Post-deployment verification passed"
 
-# Workflow summary comment on PR
+  # Workflow summary comment on PR
   comment-pr:
     name: Comment Test Results
     runs-on: ubuntu-latest
     needs: [quality-gate]
     if: github.event_name == 'pull_request'
-    
+
     steps:
       - name: Comment PR
         uses: actions/github-script@v7
@@ -654,21 +661,21 @@ jobs:
               security: '${{ needs.security.result }}',
               build: '${{ needs.build-test.result }}'
             };
-            
+
             let status = '✅ All tests passed!';
             let details = '';
-            
+
             for (const [test, result] of Object.entries(results)) {
               const emoji = result === 'success' ? '✅' : result === 'failure' ? '❌' : '⚠️';
               details += `- ${test}: ${emoji} ${result}\n`;
             }
-            
+
             if (Object.values(results).some(r => r !== 'success')) {
               status = '❌ Some tests failed';
             }
-            
+
             const body = `## TDD Pipeline Results\n\n${status}\n\n### Test Details\n${details}\n\n### Coverage\nUnit test coverage requirements met ✅\n\n### Next Steps\n${results.unit === 'success' && results.integration === 'success' ? 'Ready for review and merge!' : 'Please fix failing tests before merging.'}`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

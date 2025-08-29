@@ -2,7 +2,7 @@
 # Sprint 3: Load Testing & Performance Validation for Viral Scenarios
 
 config:
-  target: 'http://localhost:54321/functions/v1/telegram-bot'
+  target: "http://localhost:54321/functions/v1/telegram-bot"
   phases:
     # Phase 1: Warm-up
     - duration: 30
@@ -31,14 +31,14 @@ config:
 
   defaults:
     headers:
-      Content-Type: 'application/json'
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+      Content-Type: "application/json"
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
 
   # Performance thresholds
   ensure:
-    maxErrorRate: 1           # Max 1% error rate
-    maxResponseTime: 1000     # Max 1s response time
-    minRequestRate: 15        # Min 15 requests/second during sustained load
+    maxErrorRate: 1 # Max 1% error rate
+    maxResponseTime: 1000 # Max 1s response time
+    minRequestRate: 15 # Min 15 requests/second during sustained load
 
 scenarios:
   - name: "Inline Query Load Test"
