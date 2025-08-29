@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Supabase CLI
         run: |
-          npm install -g supabase@${{ env.SUPABASE_VERSION }}
+          npm install --save-dev supabase@${{ env.SUPABASE_VERSION }}
           npx supabase --version
 
       - name: Validate project structure
