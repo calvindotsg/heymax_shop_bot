@@ -1,11 +1,31 @@
 #!/usr/bin/env python3
 """
 Extract selected fields from affiliation_merchants.json where country_filter == 'SG' and base_mpd is not null.
-Outputs a JSON file with objects containing only: base_mpd, merchantName, merchant_slug, trackingLink
+Outputs:
+    1. JSON file (list of objects) with fields: base_mpd, merchantName, merchant_slug, trackingLink
+    2. CSV file with the same columns (one row per merchant)
 
-Usage: python3 scripts/extract_affiliation_fields_sg.py --input dataset/affiliation_merchants.json --output dataset/extracted_merchants_sg.json
+Default behavior now writes BOTH JSON and CSV unless disabled.
+
+Usage examples:
+    # Write both JSON (default path) and CSV (default path)
+    python3 scripts/extract_affiliation_fields_sg.py \
+            --input dataset/affiliation_merchants_full.json
+
+    # Specify custom output paths
+    python3 scripts/extract_affiliation_fields_sg.py \
+            --input dataset/affiliation_merchants_full.json \
+            --output dataset/extracted_merchants_sg.json \
+            --csv-output dataset/extracted_merchants_sg.csv
+
+    # Only JSON
+    python3 scripts/extract_affiliation_fields_sg.py --input dataset/affiliation_merchants_full.json --no-csv
+
+    # Only CSV
+    python3 scripts/extract_affiliation_fields_sg.py --input dataset/affiliation_merchants_full.json --no-json
 """
 import argparse
+import csv
 import json
 from typing import Any, Dict, List
 
@@ -38,6 +58,9 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--input", required=True, help="Path to affiliation_merchants.json")
     p.add_argument("--output", required=False, default="dataset/extracted_merchants_sg.json", help="Output JSON path (default: dataset/extracted_merchants_sg.json)")
+    p.add_argument("--csv-output", required=False, default="dataset/extracted_merchants_sg.csv", help="Output CSV path (default: dataset/extracted_merchants_sg.csv)")
+    p.add_argument("--no-json", action="store_true", help="Skip writing JSON output")
+    p.add_argument("--no-csv", action="store_true", help="Skip writing CSV output")
     p.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     args = p.parse_args()
 
@@ -62,13 +85,28 @@ def main():
 
     extracted = extract(data_list)
 
-    with open(args.output, "w", encoding="utf-8") as f:
-        if args.pretty:
-            json.dump(extracted, f, ensure_ascii=False, indent=2)
-        else:
-            json.dump(extracted, f, ensure_ascii=False)
+    if not args.no_json:
+        with open(args.output, "w", encoding="utf-8") as f:
+            if args.pretty:
+                json.dump(extracted, f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(extracted, f, ensure_ascii=False)
 
-    print(f"Wrote {len(extracted)} records to {args.output}")
+    if not args.no_csv:
+        fieldnames = ["base_mpd", "merchantName", "merchant_slug", "trackingLink"]
+        with open(args.csv_output, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in extracted:
+                writer.writerow({k: row.get(k, "") for k in fieldnames})
+
+    outputs = []
+    if not args.no_json:
+        outputs.append(f"JSON -> {args.output}")
+    if not args.no_csv:
+        outputs.append(f"CSV -> {args.csv_output}")
+    outputs_str = ", ".join(outputs) if outputs else "(no files written)" 
+    print(f"Wrote {len(extracted)} records. Outputs: {outputs_str}")
 
 
 if __name__ == "__main__":

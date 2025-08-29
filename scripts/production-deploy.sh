@@ -18,6 +18,7 @@ NC='\033[0m' # No Color
 PRODUCTION_PROJECT_ID=""
 TELEGRAM_BOT_TOKEN=""
 PRODUCTION_DB_PASSWORD=""
+SUPABASE_ANON_KEY=""
 ORG_ID=""
 SKIP_CONFIRMATION=false
 SKIP_DATA_SEED=false
@@ -47,6 +48,7 @@ Usage: $0 [OPTIONS]
 Required Options:
   -p, --project-id PROJECT_ID    Supabase production project ID
   -t, --token BOT_TOKEN         Telegram bot token from @BotFather
+  -k, --anon-key ANON_KEY       Supabase anon key for health checks
 
 Optional Options:
   -o, --org-id ORG_ID          Supabase organization ID (for new projects)
@@ -62,11 +64,12 @@ Environment Variables (alternative to options):
   TELEGRAM_BOT_TOKEN         Bot token
   SUPABASE_ORG_ID           Organization ID
   PRODUCTION_DB_PASSWORD     Database password
+  SUPABASE_ANON_KEY         Supabase anon key (for health checks)
 
 Examples:
-  $0 --project-id abc123 --token 123456:ABC-DEF
-  $0 -p abc123 -t 123456:ABC-DEF --yes --skip-seed
-  $0 --project-id abc123 --token 123456:ABC-DEF --dry-run
+  $0 --project-id abc123 --token 123456:ABC-DEF --anon-key eyJ0...
+  $0 -p abc123 -t 123456:ABC-DEF -k eyJ0... --yes --skip-seed
+  $0 --project-id abc123 --token 123456:ABC-DEF --anon-key eyJ0... --dry-run
 
 EOF
 }
@@ -81,6 +84,10 @@ parse_args() {
                 ;;
             -t|--token)
                 TELEGRAM_BOT_TOKEN="$2"
+                shift 2
+                ;;
+            -k|--anon-key)
+                SUPABASE_ANON_KEY="$2"
                 shift 2
                 ;;
             -o|--org-id)
@@ -127,6 +134,7 @@ parse_args() {
     # Use environment variables if not set via arguments
     PRODUCTION_PROJECT_ID=${PRODUCTION_PROJECT_ID:-$PRODUCTION_PROJECT_ID}
     TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-$TELEGRAM_BOT_TOKEN}
+    SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-$SUPABASE_ANON_KEY}
     ORG_ID=${ORG_ID:-$SUPABASE_ORG_ID}
     PRODUCTION_DB_PASSWORD=${PRODUCTION_DB_PASSWORD:-$PRODUCTION_DB_PASSWORD}
 
@@ -140,6 +148,12 @@ parse_args() {
     if [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
         echo -e "${RED}Error: Telegram bot token is required${NC}" >&2
         echo "Use --token or set TELEGRAM_BOT_TOKEN environment variable" >&2
+        exit 1
+    fi
+
+    if [[ -z "$SUPABASE_ANON_KEY" ]]; then
+        echo -e "${RED}Error: Supabase anon key is required${NC}" >&2
+        echo "Use --anon-key or set SUPABASE_ANON_KEY environment variable" >&2
         exit 1
     fi
 }
@@ -190,10 +204,14 @@ create_production_project() {
     
     if [[ -n "$PRODUCTION_PROJECT_ID" ]]; then
         print_status "Linking to existing project: $PRODUCTION_PROJECT_ID"
-        supabase link --project-ref "$PRODUCTION_PROJECT_ID"
+        execute_cmd "supabase link --project-ref \"$PRODUCTION_PROJECT_ID\"" "Link to existing project"
     else
+        if [[ -z "$ORG_ID" ]]; then
+            print_error "Organization ID is required for creating new projects. Use --org-id flag."
+            exit 1
+        fi
         print_warning "Creating new project. Please update PRODUCTION_PROJECT_ID after creation."
-        supabase projects create heymax-shop-bot-prod --org-id your-org-id
+        execute_cmd "supabase projects create heymax-shop-bot-prod --org-id \"$ORG_ID\"" "Create new Supabase project"
     fi
 }
 
@@ -202,35 +220,44 @@ deploy_database() {
     print_status "Deploying database schema to production..."
     
     # Push migrations to production
-    supabase db push --linked
+    execute_cmd "supabase db push --linked" "Push database migrations to production"
     
     # Verify database deployment
     print_status "Verifying database tables..."
-    supabase db diff --linked --schema public
+    execute_cmd "supabase db diff --linked --schema public" "Verify database schema"
     
     print_status "Database deployment completed."
 }
 
 # Seed production data
 seed_production_data() {
+    if [[ "$SKIP_DATA_SEED" == "true" ]]; then
+        print_status "Skipping data seeding (--skip-seed flag used)."
+        return 0
+    fi
+    
     print_status "Seeding production merchant data..."
     
     # Only seed if it's a fresh deployment
-    read -p "Is this a fresh deployment? Seed merchant data? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Run the merchant data extraction script
-        python3 scripts/extract_affiliation_fields_sg.py \
-            --input dataset/affiliation_merchants.json \
-            --output temp_merchants.json
-        
-        # Use Supabase CLI to insert data
-        supabase db seed --linked
-        
-        print_status "Production data seeding completed."
-    else
-        print_status "Skipping data seeding."
+    if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
+        read -p "Is this a fresh deployment? Seed merchant data? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_status "Skipping data seeding."
+            return 0
+        fi
     fi
+    
+    # Check if merchant data file exists
+    if [[ ! -f "dataset/extracted_merchants_sg.csv" ]]; then
+        print_status "Extracting merchant data first..."
+        execute_cmd "python3 scripts/extract_affiliation_fields_sg.py --input dataset/affiliation_merchants_full.json --output dataset/extracted_merchants_sg.csv" "Extract merchant data"
+    fi
+    
+    # Use SQL to insert data directly
+    execute_cmd "supabase db reset --linked" "Reset and seed database with migrations"
+    
+    print_status "Production data seeding completed."
 }
 
 # Deploy edge functions
@@ -238,18 +265,18 @@ deploy_edge_functions() {
     print_status "Deploying edge functions to production..."
     
     # Deploy the telegram-bot function
-    supabase functions deploy telegram-bot --project-ref "$PRODUCTION_PROJECT_ID"
+    execute_cmd "supabase functions deploy telegram-bot --project-ref \"$PRODUCTION_PROJECT_ID\" --no-verify-jwt" "Deploy telegram-bot edge function with webhook access"
     
     # Set environment variables for production
     print_status "Setting production environment variables..."
     
     if [[ -n "$TELEGRAM_BOT_TOKEN" ]]; then
-        supabase secrets set --project-ref "$PRODUCTION_PROJECT_ID" TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
+        execute_cmd "supabase secrets set --project-ref \"$PRODUCTION_PROJECT_ID\" TELEGRAM_BOT_TOKEN=\"$TELEGRAM_BOT_TOKEN\"" "Set Telegram bot token"
     fi
     
     # Set other required environment variables
-    supabase secrets set --project-ref "$PRODUCTION_PROJECT_ID" ENVIRONMENT="production"
-    supabase secrets set --project-ref "$PRODUCTION_PROJECT_ID" LOG_LEVEL="info"
+    execute_cmd "supabase secrets set --project-ref \"$PRODUCTION_PROJECT_ID\" ENVIRONMENT=\"production\"" "Set production environment"
+    execute_cmd "supabase secrets set --project-ref \"$PRODUCTION_PROJECT_ID\" LOG_LEVEL=\"info\"" "Set log level"
     
     print_status "Edge functions deployment completed."
 }
@@ -301,13 +328,48 @@ setup_monitoring() {
 validate_deployment() {
     print_status "Validating production deployment..."
     
-    # Test edge function health
-    HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://$PRODUCTION_PROJECT_ID.supabase.co/functions/v1/telegram-bot/analytics")
+    # Get project API keys for health check
+    print_status "Getting project API keys..."
+    
+    # Use the required anon key parameter
+    ANON_KEY="$SUPABASE_ANON_KEY"
+    
+    print_status "Testing edge function health with authorization..."
+    # Test edge function health with proper authorization
+    HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer $ANON_KEY" \
+        -H "apikey: $ANON_KEY" \
+        "https://$PRODUCTION_PROJECT_ID.supabase.co/functions/v1/telegram-bot")
+    
+    HEALTH_RESPONSE=$(curl -s \
+        -H "Authorization: Bearer $ANON_KEY" \
+        -H "apikey: $ANON_KEY" \
+        "https://$PRODUCTION_PROJECT_ID.supabase.co/functions/v1/telegram-bot")
     
     if [[ "$HEALTH_CHECK" == "200" ]]; then
         print_status "✅ Edge function is responding correctly."
+        if [[ "$VERBOSE" == "true" ]]; then
+            print_status "Health response: $HEALTH_RESPONSE"
+        fi
     else
         print_error "❌ Edge function health check failed (HTTP $HEALTH_CHECK)."
+        print_error "Response: $HEALTH_RESPONSE"
+        print_status "This may indicate authentication issues or function deployment problems."
+    fi
+    
+    # Test analytics endpoint as additional health check
+    if [[ -n "$ANON_KEY" ]]; then
+        print_status "Testing analytics endpoint..."
+        ANALYTICS_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $ANON_KEY" \
+            -H "apikey: $ANON_KEY" \
+            "https://$PRODUCTION_PROJECT_ID.supabase.co/functions/v1/telegram-bot/analytics")
+        
+        if [[ "$ANALYTICS_CHECK" == "200" ]]; then
+            print_status "✅ Analytics endpoint responding correctly."
+        else
+            print_warning "⚠️ Analytics endpoint returned HTTP $ANALYTICS_CHECK"
+        fi
     fi
     
     # Test database connection
@@ -328,7 +390,7 @@ validate_deployment() {
 create_deployment_docs() {
     print_status "Creating deployment documentation..."
     
-    cat > PRODUCTION_DEPLOYMENT.md << EOF
+    cat > documentation/PRODUCTION_DEPLOYMENT.md << EOF
 # HeyMax Shop Bot - Production Deployment
 
 ## Deployment Information
@@ -434,7 +496,7 @@ main() {
     echo ""
     print_status "Next steps:"
     print_status "1. Test the bot in a Telegram chat: /start"
-    print_status "2. Try inline queries: @YourBotName shopee"
+    print_status "2. Try inline queries: @heymax_shop_bot klook"
     print_status "3. Monitor usage via analytics endpoint"
     print_status "4. Set up additional monitoring as needed"
 }

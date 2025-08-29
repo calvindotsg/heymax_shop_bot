@@ -75,8 +75,42 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Telegram Bot Token
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 
+// Global bot info cache
+let BOT_INFO: any = null;
+let BOT_USERNAME = "heymax_shop_bot"; // fallback default
+let BOT_DEEP_LINK = "https://t.me/heymax_shop_bot"; // fallback deep link
+
+// Function to get bot info from Telegram API
+async function getBotInfo() {
+  if (BOT_INFO) {
+    return BOT_INFO; // Return cached info
+  }
+  
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
+    const data = await response.json();
+    
+    if (data.ok && data.result) {
+      BOT_INFO = data.result;
+      BOT_USERNAME = data.result.username || "heymax_shop_bot";
+      BOT_DEEP_LINK = `https://t.me/${BOT_USERNAME}`;
+      console.log(`Bot initialized: @${BOT_USERNAME} (${BOT_DEEP_LINK})`);
+      return BOT_INFO;
+    } else {
+      console.error("Failed to get bot info:", data);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching bot info:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   try {
+    // Initialize bot info on first request (cached afterwards)
+    await getBotInfo();
+    
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return new Response("ok", { 
@@ -88,7 +122,33 @@ serve(async (req) => {
       });
     }
 
-    // Parse Telegram webhook update
+    // Handle analytics requests (for monitoring dashboard) - BEFORE parsing webhook data
+    if (req.url.includes('/analytics')) {
+      const analytics = await getAnalyticsSummary();
+      return new Response(JSON.stringify(analytics), {
+        headers: { 
+          'Content-Type': 'application/json',
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+
+    // Handle health check requests
+    if (req.method === "GET" && !req.url.includes('/analytics')) {
+      return new Response(JSON.stringify({ 
+        status: "healthy", 
+        timestamp: new Date().toISOString(),
+        service: "HeyMax Shop Bot"
+      }), {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+
+    // Parse Telegram webhook update (only for POST requests)
     const update: TelegramUpdate = await req.json();
     
     // Handle inline queries (core bot functionality)
@@ -109,14 +169,6 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // Handle analytics requests (for monitoring dashboard)
-    if (req.url.includes('/analytics')) {
-      const analytics = await getAnalyticsSummary();
-      return new Response(JSON.stringify(analytics), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     return new Response("OK", { status: 200 });
 
   } catch (error) {
@@ -125,7 +177,7 @@ serve(async (req) => {
   }
 });
 
-// Handle inline queries: @HeyMax_shop_bot [merchant]
+// Handle inline queries: @{BOT_USERNAME} [merchant]
 async function handleInlineQuery(query: TelegramInlineQuery) {
   const userId = query.from.id;
   const username = query.from.username || `user_${userId}`;
@@ -150,15 +202,18 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
         type: "article",
         id: "no_results",
         title: `❌ No merchants found for "${searchTerm}"`,
-        description: "Try popular brands: shopee, grab, klook, lazada, foodpanda",
+        description: "Try popular brands: amazon, grab, klook, lazada, foodpanda",
         input_message_content: {
           message_text: `🔍 No merchants found for "${searchTerm}"
 
 ` +
-                       `💡 Try popular merchants: shopee, grab, klook, lazada, foodpanda
+                       `💡 Try popular merchants: amazon, grab, klook, lazada, foodpanda
 
 ` +
-                       `Type @HeyMax_shop_bot followed by a merchant name to discover earning opportunities!`,
+                       `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name to discover earning opportunities!
+
+` +
+                       `📋 **More details & terms**: https://heymax.ai`,
           parse_mode: "Markdown"
         }
       };
@@ -208,10 +263,13 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
 ` +
                      `Please try again in a moment, or search for popular merchants like:
 ` +
-                     `• shopee • grab • klook • lazada • foodpanda
+                     `• amazon • grab • klook • lazada • foodpanda
 
 ` +
-                     `🔧 If the issue persists, our team has been notified.`,
+                     `🔧 If the issue persists, our team has been notified.
+
+` +
+                     `📋 **More details & terms**: https://heymax.ai`,
         parse_mode: "Markdown"
       }
     };
@@ -233,48 +291,6 @@ async function upsertUser(userId: number, username: string) {
   if (error) {
     console.error("Error upserting user:", error);
     throw error;
-  }
-}
-
-async function searchMerchants(searchTerm: string) {
-  if (!searchTerm) {
-    // Return top merchants if no search term
-    const { data, error } = await supabase
-      .from('merchants')
-      .select('merchant_slug, merchant_name, tracking_link, base_mpd')
-      .order('base_mpd', { ascending: false })
-      .limit(5);
-    
-    if (error) throw error;
-    return data || [];
-  }
-
-  // Search by merchant name
-  const { data, error } = await supabase
-    .from('merchants')
-    .select('merchant_slug, merchant_name, tracking_link, base_mpd')
-    .ilike('merchant_name', `%${searchTerm}%`)
-    .order('base_mpd', { ascending: false })
-    .limit(10);
-  
-  if (error) throw error;
-  return data || [];
-}
-
-async function trackLinkGeneration(userId: number, merchantSlug: string, query: TelegramInlineQuery) {
-  const { error } = await supabase
-    .from('link_generations')
-    .insert({
-      user_id: userId,
-      merchant_slug: merchantSlug,
-      generated_at: new Date().toISOString(),
-      chat_id: null, // Will be updated when user actually shares the link
-      chat_type: query.chat_type || 'unknown',
-      unique_link: `telegram_${userId}_${merchantSlug}_${Date.now()}`
-    });
-  
-  if (error) {
-    console.error("Error tracking link generation:", error);
   }
 }
 
@@ -370,20 +386,23 @@ async function generatePopularMerchantResults(userId: number, username: string):
       type: "article",
       id: "help",
       title: "🔍 Search for merchants to earn Max Miles",
-      description: "Type a merchant name after @HeyMax_shop_bot",
+      description: "Type a merchant name after [@${BOT_USERNAME}](${BOT_DEEP_LINK})",
       input_message_content: {
         message_text: `🎯 Welcome to HeyMax Shop Bot!
 
 ` +
                      `💡 **How to earn Max Miles:**
 ` +
-                     `Type @HeyMax_shop_bot followed by a merchant name
+                     `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name
 
 ` +
-                     `🛍️ **Popular merchants:** shopee, grab, klook, lazada, foodpanda
+                     `🛍️ **Popular merchants:** amazon, grab, klook, lazada, foodpanda
 
 ` +
-                     `⚡ Generate personalized earning links instantly!`,
+                     `⚡ Generate personalized earning links instantly!
+
+` +
+                     `📋 **More details & terms**: https://heymax.ai`,
         parse_mode: "Markdown"
       }
     }];
@@ -464,17 +483,22 @@ async function generateEnhancedBotResponse(userId: number, username: string, mer
          `💰 Example: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
 
 ` +
-         `🚀 **Your personalized link:** 👆
+         `🚀 **Your personalized link for ${displayName}:** 👇
 
 ` +
          `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!
 
 ` +
-         `💡 **Discover more**: Try @HeyMax_shop_bot shopee, grab, klook...`;
+         `💡 **Discover more**: Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon, grab, klook...
+
+` +
+         `📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
 }
 
 // Enhanced viral keyboard with better UX
 async function generateViralKeyboard(userId: number, username: string, merchant: any, affiliateLink: string) {
+  const displayName = username ? `@${username}` : `User ${userId}`;
+  
   return {
     inline_keyboard: [
       [
@@ -485,7 +509,7 @@ async function generateViralKeyboard(userId: number, username: string, merchant:
       ],
       [
         {
-          text: `⚡ Get MY Unique Link for ${merchant.merchant_name}`,
+          text: `⚡ Get MY Unique Link for ${merchant.merchant_name} (${displayName})`,
           callback_data: `generate:${merchant.merchant_slug}:${userId}`
         }
       ]
@@ -617,8 +641,7 @@ async function handleMessage(message: TelegramMessage) {
       return;
     }
     
-    // Log other messages for debugging
-    console.log(`Received message from ${username || userId}: ${message.text}`);
+    // Log other messages for debugging (removed for production)
     
   } catch (error) {
     console.error("Error handling message:", error);
@@ -630,24 +653,25 @@ async function handleStartCommand(message: TelegramMessage) {
   const helpText = `🎯 **Welcome to HeyMax Shop Bot!**
 
 🚀 **How to earn Max Miles in any chat:**
-1. Type @HeyMax_shop_bot followed by a merchant name
+1. Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name
 2. Select your merchant from the results
 3. Tap your personalized link to start shopping & earning!
 
 💡 **Try these popular merchants:**
-• **Pelago** (8.0 miles/$) - Travel & experiences in Singapore
-• **Klook** (6.5 miles/$) - Activities and attractions
-• **Shopee Singapore** (3.5 miles/$) - Online marketplace
-• **Apple Singapore** (2.0 miles/$) - Electronics & accessories
-• **Starbucks** (3.0 miles/$) - Coffee & food
+• **Amazon.sg** (up to 4.0 miles/$) - Online marketplace
+• **Pelago** (up to 8.0 miles/$) - Travel & experiences in Singapore
+• **Klook** (up to 6.5 miles/$) - Activities and attractions
+• **Apple Singapore** (up to 2.0 miles/$) - Electronics & accessories
 
 ⚡ **Viral earning:** When others see your link, they can generate their own and earn too!
 
 🎪 **Add me to group chats** so everyone can discover earning opportunities together!
 
-**Quick start:** Type @HeyMax_shop_bot pelago to try it now! 🛍️
+**Quick start:** Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) pelago to try it now! 🛍️
 
-Need more help? Send /help anytime.`;
+Need more help? Send /help anytime.
+
+📋 **More details & terms**: https://heymax.ai`;
 
   await sendMessage(message.chat.id, helpText);
 }
@@ -657,8 +681,8 @@ async function handleHelpCommand(message: TelegramMessage) {
   const helpText = `🆘 **HeyMax Shop Bot Help**
 
 **🔍 Basic Usage:**
-• Type @HeyMax_shop_bot [merchant name] in any chat
-• Example: @HeyMax_shop_bot shopee
+• Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) [merchant name] in any chat
+• Example: [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon
 • Works in private chats, groups, and channels
 
 **⚡ Viral Earning:**
@@ -667,11 +691,11 @@ async function handleHelpCommand(message: TelegramMessage) {
 • Everyone wins - that's viral social commerce!
 
 **🛍️ Popular Merchants:**
-• pelago, klook, shopee, apple, starbucks, grab, lazada
+• pelago, klook, amazon, apple
 
 **💡 Pro Tips:**
 • Add me to group chats for viral discovery
-• Search works with partial names (e.g. "shop" finds Shopee)
+• Search works with partial names (e.g. "shop" finds amazon)
 • Empty search shows top earning merchants
 
 **🐛 Issues?**
@@ -681,7 +705,9 @@ async function handleHelpCommand(message: TelegramMessage) {
 
 **📊 Stats:** You can see viral growth analytics in group chats where I'm active.
 
-Ready to earn? Try @HeyMax_shop_bot pelago right now! 🚀`;
+Ready to earn? Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon right now! 🚀
+
+📋 **More details & terms**: https://heymax.ai`;
 
   await sendMessage(message.chat.id, helpText);
 }
@@ -746,9 +772,11 @@ async function generateViralBotResponse(userId: number, username: string, mercha
 
 🚀 **Your personalized link:** 👆
 
-💡 **Keep the viral loop going**: Share @HeyMax_shop_bot with friends and groups!
+💡 **Keep the viral loop going**: Share [@${BOT_USERNAME}](${BOT_DEEP_LINK}) with friends and groups!
 
-Try more: @HeyMax_shop_bot klook, pelago, grab...`;
+Try more: [@${BOT_USERNAME}](${BOT_DEEP_LINK}) klook, pelago, grab...
+
+📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
 }
 
 // Sprint 3: Analytics & Monitoring Implementation

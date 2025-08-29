@@ -71,3 +71,6 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Proprietary files
+dataset/
