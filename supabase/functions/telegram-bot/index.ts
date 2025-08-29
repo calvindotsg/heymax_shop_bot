@@ -70,6 +70,20 @@ interface TelegramInlineQueryResult {
   thumbnail_url?: string;
 }
 
+// Database types
+interface Merchant {
+  merchant_slug: string;
+  merchant_name: string;
+  tracking_link: string;
+  base_mpd: number;
+}
+
+interface AffiliateData {
+  affiliate_link: string;
+  tracking_id: string;
+  merchant: Merchant;
+}
+
 // Initialize Supabase client
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -79,7 +93,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 
 // Global bot info cache
-let BOT_INFO: any = null;
+let BOT_INFO: { id: number; is_bot: boolean; first_name: string; username: string; can_join_groups?: boolean; can_read_all_group_messages?: boolean; supports_inline_queries?: boolean } | null = null;
 let BOT_USERNAME = "heymax_shop_bot"; // fallback default
 let BOT_DEEP_LINK = "https://t.me/heymax_shop_bot"; // fallback deep link
 
@@ -247,7 +261,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
             Math.round(merchant.match_score * 100)
           }% match`,
           input_message_content: {
-            message_text: await generateEnhancedBotResponse(
+            message_text: generateEnhancedBotResponse(
               userId,
               username,
               merchant,
@@ -255,7 +269,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
             ),
             parse_mode: "Markdown",
           },
-          reply_markup: await generateViralKeyboard(
+          reply_markup: generateViralKeyboard(
             userId,
             username,
             merchant,
@@ -451,7 +465,7 @@ async function generatePopularMerchantResults(
       description:
         `Top earner: up to ${merchant.base_mpd} Max Miles per $1 spent`,
       input_message_content: {
-        message_text: await generateEnhancedBotResponse(
+        message_text: generateEnhancedBotResponse(
           userId,
           username,
           merchant,
@@ -459,7 +473,7 @@ async function generatePopularMerchantResults(
         ),
         parse_mode: "Markdown",
       },
-      reply_markup: await generateViralKeyboard(
+      reply_markup: generateViralKeyboard(
         userId,
         username,
         merchant,
@@ -484,7 +498,7 @@ async function generateAffiliateLink(userId: number, merchantSlug: string) {
   }
 
   // Replace placeholder with actual user ID
-  let affiliateLink = merchant.tracking_link.replace(
+  const affiliateLink = merchant.tracking_link.replace(
     "{{USER_ID}}",
     userId.toString(),
   );
@@ -515,12 +529,12 @@ async function generateAffiliateLink(userId: number, merchantSlug: string) {
 }
 
 // Enhanced bot response with engaging UX and viral mechanics
-async function generateEnhancedBotResponse(
+function generateEnhancedBotResponse(
   userId: number,
   username: string,
-  merchant: any,
-  affiliateData: any,
-): Promise<string> {
+  merchant: Merchant,
+  _affiliateData: AffiliateData,
+): string {
   const displayName = username ? `@${username}` : `User ${userId}`;
   const earnRate = merchant.base_mpd;
 
@@ -551,10 +565,10 @@ async function generateEnhancedBotResponse(
 }
 
 // Enhanced viral keyboard with better UX
-async function generateViralKeyboard(
+function generateViralKeyboard(
   userId: number,
   username: string,
-  merchant: any,
+  merchant: Merchant,
   affiliateLink: string,
 ) {
   const displayName = username ? `@${username}` : `User ${userId}`;
@@ -581,7 +595,7 @@ async function generateViralKeyboard(
 // Enhanced analytics tracking with detailed metrics
 async function trackEnhancedLinkGeneration(
   userId: number,
-  merchants: any[],
+  merchants: Merchant[],
   searchTerm: string,
   query: TelegramInlineQuery,
 ) {
@@ -673,13 +687,13 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
       const affiliateData = await generateAffiliateLink(userId, merchantSlug);
 
       // Create viral response message
-      const viralResponse = await generateViralBotResponse(
+      const viralResponse = generateViralBotResponse(
         userId,
         username,
         merchant,
         affiliateData,
       );
-      const viralKeyboard = await generateViralKeyboard(
+      const viralKeyboard = generateViralKeyboard(
         userId,
         username,
         merchant,
@@ -861,12 +875,12 @@ async function updateViralStats(viralUserId: number, originalUserId: number) {
 }
 
 // Enhanced viral bot response for callback-generated links
-async function generateViralBotResponse(
+function generateViralBotResponse(
   userId: number,
   username: string,
-  merchant: any,
-  affiliateData: any,
-): Promise<string> {
+  merchant: Merchant,
+  _affiliateData: AffiliateData,
+): string {
   const displayName = username ? `@${username}` : `User ${userId}`;
   const earnRate = merchant.base_mpd;
   const exampleSpend = earnRate >= 5 ? 100 : 200;
@@ -898,7 +912,7 @@ async function getAnalyticsSummary() {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const _oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Get user metrics
     const { count: totalUsersCount } = await supabase
@@ -963,10 +977,10 @@ async function getAnalyticsSummary() {
       .not("merchant_slug", "is", null);
 
     // Calculate merchant popularity
-    const merchantCounts = topMerchants?.reduce((acc: any, item) => {
+    const merchantCounts = topMerchants?.reduce((acc: Record<string, number>, item) => {
       acc[item.merchant_slug] = (acc[item.merchant_slug] || 0) + 1;
       return acc;
-    }, {}) || {};
+    }, {} as Record<string, number>) || {};
 
     const topMerchantsRanked = Object.entries(merchantCounts)
       .sort(([, a], [, b]) => (b as number) - (a as number))
@@ -1030,7 +1044,7 @@ async function getAnalyticsSummary() {
 }
 
 // Monitor function invocation limits for free tier
-async function checkFunctionInvocationLimits() {
+async function _checkFunctionInvocationLimits() {
   try {
     // This would integrate with Supabase monitoring APIs in production
     // For now, we'll track basic metrics
@@ -1064,7 +1078,7 @@ async function checkFunctionInvocationLimits() {
 }
 
 // Real-time viral coefficient monitoring
-async function getViralCoefficientTrend(days: number = 7) {
+async function _getViralCoefficientTrend(days: number = 7) {
   try {
     const dailyCoefficients: Array<{
       date: string;
@@ -1115,7 +1129,7 @@ async function getViralCoefficientTrend(days: number = 7) {
 }
 
 // Performance monitoring for load testing
-async function getPerformanceMetrics() {
+async function _getPerformanceMetrics() {
   try {
     // In production, this would integrate with monitoring tools
     // For MVP, we'll return basic metrics
@@ -1215,11 +1229,17 @@ async function answerCallbackQuery(
 }
 
 // Send message to chat (for viral responses and help)
-async function sendMessage(chatId: number, text: string, replyMarkup?: any) {
+async function sendMessage(chatId: number, text: string, replyMarkup?: { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> }) {
   const telegramApiUrl =
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
-  const payload: any = {
+  const payload: {
+    chat_id: number;
+    text: string;
+    parse_mode: string;
+    disable_web_page_preview: boolean;
+    reply_markup?: { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> };
+  } = {
     chat_id: chatId,
     text: text,
     parse_mode: "Markdown",

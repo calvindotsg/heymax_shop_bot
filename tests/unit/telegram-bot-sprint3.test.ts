@@ -184,7 +184,7 @@ Ready to earn? Try @HeyMax_shop_bot pelago right now! 🚀`;
 });
 
 Deno.test("Viral Bot Response - should generate engaging viral message", () => {
-  const userId = 987654321;
+  const _userId = 987654321;
   const username = "viraluser";
   const merchant = {
     merchant_name: "Shopee Singapore",
@@ -407,10 +407,10 @@ Deno.test("Top Merchants Ranking - should rank by activity", () => {
   ];
 
   // Calculate merchant popularity
-  const merchantCounts = mockLinkGenerations.reduce((acc: any, item) => {
+  const merchantCounts = mockLinkGenerations.reduce((acc: Record<string, number>, item) => {
     acc[item.merchant_slug] = (acc[item.merchant_slug] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
   const topMerchantsRanked = Object.entries(merchantCounts)
     .sort(([, a], [, b]) => (b as number) - (a as number))

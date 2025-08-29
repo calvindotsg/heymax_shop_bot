@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from "testing/asserts.ts";
+import { assertEquals } from "testing/asserts.ts";
 import { createClient } from "@supabase/supabase-js";
 
 // Test configuration
@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // RED Phase: Write failing tests first
 Deno.test("Database Connection - should connect to Supabase", async () => {
-  const { data, error, count } = await supabase.from("users").select("*", {
+  const { error, count } = await supabase.from("users").select("*", {
     count: "exact",
     head: true,
   });
@@ -22,7 +22,7 @@ Deno.test("Database Connection - should connect to Supabase", async () => {
 });
 
 Deno.test("Users Table - should exist with correct schema", async () => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("users")
     .select("*")
     .limit(1);
@@ -32,7 +32,7 @@ Deno.test("Users Table - should exist with correct schema", async () => {
 });
 
 Deno.test("Merchants Table - should exist with Singapore dataset", async () => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("merchants")
     .select("*")
     .limit(1);
@@ -42,7 +42,7 @@ Deno.test("Merchants Table - should exist with Singapore dataset", async () => {
 });
 
 Deno.test("Link Generations Table - should exist for tracking", async () => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("link_generations")
     .select("*")
     .limit(1);

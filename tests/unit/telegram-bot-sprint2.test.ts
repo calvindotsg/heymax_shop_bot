@@ -136,7 +136,7 @@ Deno.test("Enhanced Link Generation - should include UTM parameters", () => {
 });
 
 Deno.test("Enhanced Bot Response - should generate engaging message format", () => {
-  const userId = 123456789;
+  const _userId = 123456789;
   const username = "testuser";
   const merchant = {
     merchant_name: "Shopee Singapore",
@@ -185,7 +185,7 @@ Deno.test("Enhanced Bot Response - should generate engaging message format", () 
 
 Deno.test("Enhanced Viral Keyboard - should have proper button structure", () => {
   const userId = 123456789;
-  const username = "testuser";
+  const _username = "testuser";
   const merchant = {
     merchant_name: "Shopee Singapore",
     merchant_slug: "shopee-singapore",
@@ -221,12 +221,12 @@ Deno.test("Enhanced Viral Keyboard - should have proper button structure", () =>
     "Second button should be viral action",
   );
   assertEquals(
-    (keyboard.inline_keyboard[0][0] as any).url,
+    (keyboard.inline_keyboard[0][0] as { text: string; url: string }).url,
     affiliateLink,
     "Shop button should have affiliate link",
   );
   assertStringIncludes(
-    (keyboard.inline_keyboard[1][0] as any).callback_data,
+    (keyboard.inline_keyboard[1][0] as { text: string; callback_data: string }).callback_data,
     `generate:${merchant.merchant_slug}:${userId}`,
     "Viral button should have callback data",
   );
