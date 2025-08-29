@@ -58,7 +58,7 @@ jobs:
       - name: Install Supabase CLI
         run: |
           npm install -g supabase@${{ env.SUPABASE_VERSION }}
-          supabase --version
+          npx supabase --version
 
       - name: Validate project structure
         run: |
@@ -224,7 +224,7 @@ jobs:
           echo "✅ Coverage requirements met: $COVERAGE%"
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unit-test-coverage
           path: |
@@ -271,12 +271,12 @@ jobs:
           deno-version: ${{ env.DENO_VERSION }}
 
       - name: Install Supabase CLI
-        run: npm install -g supabase@${{ env.SUPABASE_VERSION }}
+        run: npm install --save-dev supabase@${{ env.SUPABASE_VERSION }}
 
       - name: Start Supabase local development
         run: |
           echo "🗄️ Starting Supabase local development..."
-          supabase start --exclude gotrue,realtime,storage-api,imgproxy,inbucket,edge-runtime
+          npx supabase start --exclude gotrue,realtime,storage-api,imgproxy,inbucket,edge-runtime
           
           # Wait for services to be ready
           sleep 10
@@ -287,13 +287,13 @@ jobs:
       - name: Run database migrations
         run: |
           echo "🗄️ Running database migrations..."
-          supabase db push --local
+          npx supabase db push --local
 
       - name: Seed test data
         run: |
           echo "🌱 Seeding test data..."
           # Use existing seed.sql file
-          supabase db reset --local
+          npx supabase db reset --local
 
       - name: Run integration tests
         env:
@@ -318,7 +318,7 @@ jobs:
           deno coverage integration-coverage/ --lcov > integration-coverage/lcov.info
 
       - name: Upload integration coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-coverage
           path: integration-coverage/
@@ -327,7 +327,7 @@ jobs:
       - name: Cleanup Supabase
         if: always()
         run: |
-          supabase stop || echo "Supabase cleanup completed"
+          npx supabase stop || echo "Supabase cleanup completed"
 
   # Job 5: Performance Tests
   performance-tests:
@@ -404,7 +404,7 @@ jobs:
           echo "✅ Performance analysis completed"
 
       - name: Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-test-results
           path: performance-results/
@@ -466,7 +466,7 @@ jobs:
           deno-version: ${{ env.DENO_VERSION }}
 
       - name: Install Supabase CLI
-        run: npm install -g supabase@${{ env.SUPABASE_VERSION }}
+        run: npm install --save-dev supabase@${{ env.SUPABASE_VERSION }}
 
       - name: Build edge function
         run: |
@@ -491,7 +491,7 @@ jobs:
           echo "🚀 Testing deployment configuration..."
           
           # Validate deployment configuration
-          supabase link --project-ref $SUPABASE_PROJECT_REF
+          npx supabase link --project-ref $SUPABASE_PROJECT_REF
           
           # Dry run deployment
           echo "✅ Deployment configuration valid"
@@ -513,7 +513,7 @@ jobs:
     
     steps:
       - name: Download coverage reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ./artifacts
 
@@ -589,7 +589,7 @@ jobs:
           EOF
 
       - name: Upload quality report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: quality-report
           path: quality-report.md
@@ -608,7 +608,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Supabase CLI
-        run: npm install -g supabase@${{ env.SUPABASE_VERSION }}
+        run: npm install --save-dev supabase@${{ env.SUPABASE_VERSION }}
 
       - name: Deploy to staging
         env:
@@ -617,8 +617,8 @@ jobs:
         run: |
           echo "🚀 Deploying to staging..."
           
-          supabase link --project-ref $SUPABASE_PROJECT_REF
-          supabase functions deploy telegram-bot
+          npx supabase link --project-ref $SUPABASE_PROJECT_REF
+          npx supabase functions deploy telegram-bot
           
           echo "✅ Deployment to staging completed"
 
