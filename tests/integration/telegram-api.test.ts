@@ -3,17 +3,26 @@
 // Part of TDD Sprint 1: Foundation & Infrastructure
 
 import {
+  assert,
   assertEquals,
   assertExists,
-  assert,
 } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 
 // Test configuration
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "test-token";
 const BASE_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
+// Type definitions for Telegram API
+interface TelegramCommand {
+  command: string;
+  description: string;
+}
+
 // Helper function for Telegram API calls
-async function callTelegramAPI(method: string, params: any = {}) {
+async function callTelegramAPI(
+  method: string,
+  params: Record<string, unknown> = {},
+) {
   const url = `${BASE_URL}/${method}`;
   const response = await fetch(url, {
     method: "POST",
@@ -22,23 +31,23 @@ async function callTelegramAPI(method: string, params: any = {}) {
     },
     body: JSON.stringify(params),
   });
-  
+
   const data = await response.json();
   return { response, data };
 }
 
 Deno.test("Integration: Telegram API - Bot info retrieval", async () => {
   const { response, data } = await callTelegramAPI("getMe");
-  
+
   assertEquals(response.status, 200);
   assertEquals(data.ok, true, `API error: ${data.description}`);
-  
+
   const botInfo = data.result;
   assertExists(botInfo.id);
   assertExists(botInfo.username);
   assertEquals(botInfo.is_bot, true);
   assert(botInfo.username.includes("bot"), "Username should indicate bot");
-  
+
   // Log bot info for debugging
   console.log(`✅ Connected to bot: @${botInfo.username} (ID: ${botInfo.id})`);
 });
@@ -46,21 +55,24 @@ Deno.test("Integration: Telegram API - Bot info retrieval", async () => {
 Deno.test("Integration: Telegram API - Webhook URL validation", async () => {
   // Test webhook info retrieval
   const { response, data } = await callTelegramAPI("getWebhookInfo");
-  
+
   assertEquals(response.status, 200);
   assertEquals(data.ok, true, `API error: ${data.description}`);
-  
+
   const webhookInfo = data.result;
   assertExists(webhookInfo);
-  
+
   // Log current webhook status
   if (webhookInfo.url) {
     console.log(`ℹ️ Webhook configured: ${webhookInfo.url}`);
-    assert(webhookInfo.url.startsWith("https://"), "Webhook URL should use HTTPS");
+    assert(
+      webhookInfo.url.startsWith("https://"),
+      "Webhook URL should use HTTPS",
+    );
   } else {
     console.log("ℹ️ No webhook currently configured");
   }
-  
+
   // Verify webhook can be accessed if set
   if (webhookInfo.url && webhookInfo.url.includes("supabase")) {
     try {
@@ -69,9 +81,12 @@ Deno.test("Integration: Telegram API - Webhook URL validation", async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ test: true }),
       });
-      
+
       // Webhook should at least be reachable (may return 400 for invalid data)
-      assert(webhookResponse.status < 500, "Webhook endpoint should be accessible");
+      assert(
+        webhookResponse.status < 500,
+        "Webhook endpoint should be accessible",
+      );
     } catch (error) {
       console.warn(`⚠️ Webhook accessibility test failed: ${error.message}`);
     }
@@ -80,20 +95,20 @@ Deno.test("Integration: Telegram API - Webhook URL validation", async () => {
 
 Deno.test("Integration: Telegram API - Bot commands configuration", async () => {
   const { response, data } = await callTelegramAPI("getMyCommands");
-  
+
   assertEquals(response.status, 200);
   assertEquals(data.ok, true, `API error: ${data.description}`);
-  
+
   const commands = data.result;
   assertExists(commands);
-  
+
   // Bot should have basic commands configured
   if (commands.length > 0) {
-    const commandNames = commands.map((cmd: any) => cmd.command);
+    const commandNames = commands.map((cmd: TelegramCommand) => cmd.command);
     console.log(`✅ Bot commands configured: ${commandNames.join(", ")}`);
-    
+
     // Verify command structure
-    commands.forEach((cmd: any) => {
+    commands.forEach((cmd: TelegramCommand) => {
       assertExists(cmd.command);
       assertExists(cmd.description);
       assert(cmd.command.length > 0);
@@ -106,46 +121,54 @@ Deno.test("Integration: Telegram API - Bot commands configuration", async () => 
 
 Deno.test("Integration: Telegram API - Inline query support", async () => {
   const { response, data } = await callTelegramAPI("getMe");
-  
+
   assertEquals(response.status, 200);
   assertEquals(data.ok, true);
-  
+
   const botInfo = data.result;
   assertEquals(
     botInfo.supports_inline_queries,
     true,
-    "Bot should support inline queries for shop functionality"
+    "Bot should support inline queries for shop functionality",
   );
-  
-  console.log(`✅ Inline queries supported: ${botInfo.supports_inline_queries}`);
+
+  console.log(
+    `✅ Inline queries supported: ${botInfo.supports_inline_queries}`,
+  );
 });
 
 Deno.test("Integration: Telegram API - Message sending capability", async () => {
   // Skip if no test chat ID provided
   const testChatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID");
   if (!testChatId) {
-    console.log("⚠️ Skipping message sending test - no TELEGRAM_TEST_CHAT_ID provided");
+    console.log(
+      "⚠️ Skipping message sending test - no TELEGRAM_TEST_CHAT_ID provided",
+    );
     return;
   }
-  
-  const testMessage = `🧪 Integration test message - ${new Date().toISOString()}`;
-  
+
+  const testMessage = `🧪 Integration test message - ${
+    new Date().toISOString()
+  }`;
+
   const { response, data } = await callTelegramAPI("sendMessage", {
     chat_id: testChatId,
     text: testMessage,
     disable_notification: true, // Don't spam during tests
   });
-  
+
   if (data.ok) {
     assertEquals(response.status, 200);
     assertEquals(data.ok, true);
-    
+
     const message = data.result;
     assertExists(message.message_id);
     assertEquals(message.text, testMessage);
     assertEquals(message.chat.id.toString(), testChatId);
-    
-    console.log(`✅ Test message sent successfully (ID: ${message.message_id})`);
+
+    console.log(
+      `✅ Test message sent successfully (ID: ${message.message_id})`,
+    );
   } else {
     console.warn(`⚠️ Message sending failed: ${data.description}`);
     // Don't fail test if it's just a permission issue
@@ -155,7 +178,7 @@ Deno.test("Integration: Telegram API - Message sending capability", async () => 
   }
 });
 
-Deno.test("Integration: Telegram API - Answer inline query format", async () => {
+Deno.test("Integration: Telegram API - Answer inline query format", () => {
   // Test the structure of answerInlineQuery without actually sending
   const mockInlineQueryId = "test-query-id";
   const mockResults = [
@@ -185,20 +208,20 @@ Deno.test("Integration: Telegram API - Answer inline query format", async () => 
       },
     },
   ];
-  
+
   // Don't actually send, just validate structure
   const payload = {
     inline_query_id: mockInlineQueryId,
     results: mockResults,
     cache_time: 30,
   };
-  
+
   // Validate payload structure
   assertExists(payload.inline_query_id);
   assertExists(payload.results);
   assert(Array.isArray(payload.results));
   assert(payload.results.length > 0);
-  
+
   const result = payload.results[0];
   assertEquals(result.type, "article");
   assertExists(result.id);
@@ -206,27 +229,27 @@ Deno.test("Integration: Telegram API - Answer inline query format", async () => 
   assertExists(result.description);
   assertExists(result.input_message_content);
   assertExists(result.reply_markup);
-  
+
   // Validate keyboard structure
   const keyboard = result.reply_markup.inline_keyboard;
   assert(Array.isArray(keyboard));
   assert(keyboard.length >= 2, "Should have at least 2 button rows");
-  
+
   const shopButton = keyboard[0][0];
   const viralButton = keyboard[1][0];
-  
+
   assertExists(shopButton.text);
   assertExists(shopButton.url);
   assert(shopButton.url.startsWith("https://"));
-  
+
   assertExists(viralButton.text);
   assertExists(viralButton.callback_data);
   assert(viralButton.callback_data.includes("generate:"));
-  
+
   console.log("✅ Inline query response structure validation passed");
 });
 
-Deno.test("Integration: Telegram API - Callback query answer format", async () => {
+Deno.test("Integration: Telegram API - Callback query answer format", () => {
   // Test callback query response structure
   const mockCallbackResponse = {
     method: "answerCallbackQuery",
@@ -234,25 +257,25 @@ Deno.test("Integration: Telegram API - Callback query answer format", async () =
     text: "✅ Your unique link generated!",
     show_alert: false,
   };
-  
+
   // Validate response structure
   assertEquals(mockCallbackResponse.method, "answerCallbackQuery");
   assertExists(mockCallbackResponse.callback_query_id);
   assertExists(mockCallbackResponse.text);
   assertEquals(typeof mockCallbackResponse.show_alert, "boolean");
-  
+
   console.log("✅ Callback query response structure validation passed");
 });
 
 Deno.test("Integration: Telegram API - Error handling", async () => {
   // Test API error handling with invalid method
   const { response, data } = await callTelegramAPI("invalidMethod");
-  
+
   assertEquals(response.status, 404);
   assertEquals(data.ok, false);
   assertExists(data.description);
   assertExists(data.error_code);
-  
+
   console.log(`✅ Error handling works: ${data.description}`);
 });
 
@@ -260,19 +283,19 @@ Deno.test("Integration: Telegram API - Rate limiting awareness", async () => {
   // Test that we can handle multiple requests without immediate rate limiting
   const requests = [];
   const requestCount = 5;
-  
+
   for (let i = 0; i < requestCount; i++) {
     requests.push(callTelegramAPI("getMe"));
   }
-  
+
   const startTime = performance.now();
   const responses = await Promise.all(requests);
   const endTime = performance.now();
-  
+
   // All should succeed under normal circumstances
   let successCount = 0;
   let rateLimitedCount = 0;
-  
+
   responses.forEach(({ data }) => {
     if (data.ok) {
       successCount++;
@@ -280,13 +303,15 @@ Deno.test("Integration: Telegram API - Rate limiting awareness", async () => {
       rateLimitedCount++;
     }
   });
-  
+
   const totalTime = endTime - startTime;
-  console.log(`✅ API requests: ${successCount} succeeded, ${rateLimitedCount} rate limited, ${totalTime}ms total`);
-  
+  console.log(
+    `✅ API requests: ${successCount} succeeded, ${rateLimitedCount} rate limited, ${totalTime}ms total`,
+  );
+
   // At least some should succeed
   assert(successCount > 0, "At least some API calls should succeed");
-  
+
   // If rate limited, that's also acceptable behavior
   if (rateLimitedCount > 0) {
     console.log("ℹ️ Some requests were rate limited (expected behavior)");
