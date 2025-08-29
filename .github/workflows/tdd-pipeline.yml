@@ -183,6 +183,9 @@ jobs:
           echo "LOG_LEVEL=error" >> $GITHUB_ENV
 
       - name: Run unit tests with coverage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
         run: |
           echo "🧪 Running unit tests with coverage..."
 
