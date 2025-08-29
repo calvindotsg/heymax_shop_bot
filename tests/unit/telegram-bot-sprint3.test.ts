@@ -131,8 +131,8 @@ Deno.test("Viral Bot Response - should generate engaging viral message", () => {
   
   const viralResponse = `🎉 **${displayName}, your viral ${merchant.merchant_name} link is ready!**
 
-✨ **Earn ${earnRate} Max Miles per $1** spent
-💰 **Example**: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
+✨ **Earn up to ${earnRate} Max Miles per $1** spent
+💰 **Example**: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles
 
 🔥 **You discovered this through viral sharing** - now others can do the same!
 

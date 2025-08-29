@@ -104,8 +104,8 @@ Deno.test("Enhanced Bot Response - should generate engaging message format", () 
   const exampleEarnings = Math.round(exampleSpend * earnRate);
   
   const response = `🎯 **${displayName}, your ${merchant.merchant_name} link is ready!**\n\n` +
-                  `✨ **Earn ${earnRate} Max Miles per $1** spent\n` +
-                  `💰 Example: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles\n\n` +
+                  `✨ **Earn up to ${earnRate} Max Miles per $1** spent\n` +
+                  `💰 Example: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles\n\n` +
                   `🚀 **Your personalized link:** 👆\n\n` +
                   `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!\n\n` +
                   `💡 **Discover more**: Try @HeyMax_shop_bot shopee, grab, klook...`;

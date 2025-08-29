@@ -231,7 +231,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
           type: "article",
           id: `${merchant.merchant_slug}_${index}`,
           title: `🛍️ ${merchant.merchant_name}`,
-          description: `Earn ${merchant.base_mpd} Max Miles per $1 • ${Math.round(merchant.match_score * 100)}% match`,
+          description: `Earn up to ${merchant.base_mpd} Max Miles per $1 • ${Math.round(merchant.match_score * 100)}% match`,
           input_message_content: {
             message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
             parse_mode: "Markdown"
@@ -415,7 +415,7 @@ async function generatePopularMerchantResults(userId: number, username: string):
       type: "article",
       id: `popular_${merchant.merchant_slug}_${index}`,
       title: `⭐ ${merchant.merchant_name}`,
-      description: `Top earner: ${merchant.base_mpd} Max Miles per $1 spent`,
+      description: `Top earner: up to ${merchant.base_mpd} Max Miles per $1 spent`,
       input_message_content: {
         message_text: await generateEnhancedBotResponse(userId, username, merchant, affiliateData),
         parse_mode: "Markdown"
@@ -478,9 +478,9 @@ async function generateEnhancedBotResponse(userId: number, username: string, mer
   return `🎯 **${displayName}, your ${merchant.merchant_name} link is ready!**
 
 ` +
-         `✨ **Earn ${earnRate} Max Miles per $1** spent
+         `✨ **Earn up to ${earnRate} Max Miles per $1** spent
 ` +
-         `💰 Example: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
+         `💰 Example: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles
 
 ` +
          `🚀 **Your personalized link for ${displayName}:** 👇
@@ -503,13 +503,13 @@ async function generateViralKeyboard(userId: number, username: string, merchant:
     inline_keyboard: [
       [
         {
-          text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles`,
+          text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles (${displayName})`,
           url: affiliateLink
         }
       ],
       [
         {
-          text: `⚡ Get MY Unique Link for ${merchant.merchant_name} (${displayName})`,
+          text: `⚡ Get MY Unique Link for ${merchant.merchant_name}`,
           callback_data: `generate:${merchant.merchant_slug}:${userId}`
         }
       ]
@@ -765,8 +765,8 @@ async function generateViralBotResponse(userId: number, username: string, mercha
   
   return `🎉 **${displayName}, your viral ${merchant.merchant_name} link is ready!**
 
-✨ **Earn ${earnRate} Max Miles per $1** spent
-💰 **Example**: Spend $${exampleSpend} → Earn ${exampleEarnings} Max Miles
+✨ **Earn up to ${earnRate} Max Miles per $1** spent
+💰 **Example**: Spend $${exampleSpend} → Earn up to ${exampleEarnings} Max Miles
 
 🔥 **You discovered this through viral sharing** - now others can do the same!
 

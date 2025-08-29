@@ -1,4 +1,4 @@
-# HeyMax_shop_bot: Turn Every Chat Into Cash
+# HeyMax Shop Telegram Bot: Turn Every Chat Into Miles
 
 ## Concise Pitch
 
