@@ -251,20 +251,6 @@ jobs:
     needs: [setup, lint]
     timeout-minutes: 15
 
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: heymax_shop_bot_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -274,30 +260,37 @@ jobs:
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
-      - name: Install Supabase CLI
-        run: npm install --save-dev supabase@${{ env.SUPABASE_VERSION }}
-
-      - name: Start Supabase local development
+      - name: Verify production Supabase connectivity
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
         run: |
-          echo "🗄️ Starting Supabase local development..."
-          npx supabase start --exclude gotrue,realtime,storage-api,imgproxy,inbucket,edge-runtime
+          echo "🔌 Verifying production Supabase connectivity..."
+          
+          # Test connection to production Supabase
+          curl -f -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+               -H "apikey: $SUPABASE_ANON_KEY" \
+               "$SUPABASE_URL/rest/v1/" || (echo "❌ Cannot connect to production Supabase" && exit 1)
+          
+          echo "✅ Production Supabase connection verified"
 
-          # Wait for services to be ready
-          sleep 10
-
-          # Verify connection
-          curl -s http://localhost:54321/rest/v1/ || (echo "❌ Supabase not ready" && exit 1)
-
-      - name: Run database migrations
+      - name: Setup test environment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
         run: |
-          echo "🗄️ Running database migrations..."
-          npx supabase db push --local
-
-      - name: Seed test data
-        run: |
-          echo "🌱 Seeding test data..."
-          # Use existing seed.sql file
-          npx supabase db reset --local
+          echo "🧪 Setting up integration test environment..."
+          
+          # Verify required environment variables
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "❌ Missing required Supabase environment variables"
+            exit 1
+          fi
+          
+          # Create test data directory
+          mkdir -p test-data
+          
+          echo "✅ Test environment configured for production Supabase"
 
       - name: Run integration tests
         env:
@@ -328,10 +321,15 @@ jobs:
           path: integration-coverage/
           retention-days: 7
 
-      - name: Cleanup Supabase
+      - name: Cleanup test environment
         if: always()
         run: |
-          npx supabase stop || echo "Supabase cleanup completed"
+          echo "🧹 Cleaning up test environment..."
+          
+          # Remove temporary test data
+          rm -rf test-data/ || echo "Test data cleanup completed"
+          
+          echo "✅ Integration test cleanup completed"
 
   # Job 5: Performance Tests
   performance-tests:
