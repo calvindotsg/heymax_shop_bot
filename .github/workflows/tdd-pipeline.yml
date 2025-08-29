@@ -353,7 +353,26 @@ jobs:
       - name: Install performance testing tools
         run: |
           # Install additional tools for load testing
-          npm install -g artillery@2.0.0
+          echo "📦 Installing Artillery load testing tool..."
+          npm install -g artillery@2.0.24 || npm install -g artillery
+          
+          # Install additional performance testing tools as backup
+          echo "📦 Installing Autocannon as alternative..."
+          npm install -g autocannon@7.15.0 || npm install -g autocannon || echo "⚠️ Autocannon installation failed, continuing..."
+          
+          # Verify installations
+          echo "🔍 Verifying installations..."
+          if command -v artillery &> /dev/null; then
+            echo "✅ Artillery installed: $(artillery version)"
+          else
+            echo "❌ Artillery installation failed"
+          fi
+          
+          if command -v autocannon &> /dev/null; then
+            echo "✅ Autocannon installed: $(autocannon --version 2>&1 | head -1 || echo 'version check failed')"
+          else
+            echo "⚠️ Autocannon not available"
+          fi
 
       - name: Setup performance test environment
         run: |
