@@ -1,4 +1,8 @@
-# CLAUDE.md - HeyMax Shop Bot Development Guide
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# HeyMax Shop Bot Development Guide
 
 ## Project Overview
 
@@ -57,27 +61,43 @@ heymax_shop_bot/
 └── documentation/                       # Comprehensive docs
 ```
 
-## Commonly Used Commands
+## Essential Commands
 
 ### Development Workflow
 
 ```bash
-# Setup local development
+# Initial setup (requires Docker Desktop)
 npm run setup:local          # Initialize Supabase locally
-npm run db:migrate           # Apply database migrations
+supabase start              # Start all Supabase services
+
+# Database operations
+npm run db:migrate          # Apply database migrations
 npm run db:reset            # Reset database with seed data
+supabase db reset           # Alternative reset command
 
-# Testing (TDD Approach)
+# Testing (TDD Approach - CRITICAL for development)
 npm test                    # Run all 43 tests
-npm run test:coverage       # Run with coverage reporting
+npm run test:watch          # TDD watch mode (recommended for development)
+npm run test:coverage       # Coverage reporting
 npm run test:performance    # Load testing with Artillery
-npm run test:watch         # TDD watch mode
-npm run pipeline           # Full CI/CD pipeline
+npm run pipeline            # Full CI/CD pipeline
 
-# Local development
-supabase start             # Start local Supabase
-supabase functions serve   # Serve functions locally
-supabase db reset          # Reset with fresh seed data
+# Single test execution
+npm test -- tests/unit/telegram-bot.test.ts           # Core bot tests
+npm test -- tests/integration/database.test.ts        # Database integration
+npm test -- tests/performance/performance-validation.test.ts # Load tests
+
+# Local development server
+supabase functions serve   # Serve Edge Functions locally
+```
+
+### Deno-Specific Commands (Alternative to npm)
+
+```bash
+# Direct Deno usage (if npm not available)
+deno test --allow-env --allow-net --allow-read --allow-write tests/
+deno test --allow-env --allow-net --allow-read --allow-write --watch tests/
+deno run --allow-env --allow-net --allow-read --allow-write --watch supabase/functions/telegram-bot/index.ts
 ```
 
 ### Production Deployment
@@ -94,32 +114,52 @@ supabase db reset          # Reset with fresh seed data
   --url https://your-project.supabase.co/functions/v1/telegram-bot
 ```
 
-## Core Bot Functionality
+## Architecture Deep Dive
 
-### 1. Inline Query Processing
+### Core Bot Flow (supabase/functions/telegram-bot/index.ts)
 
-- **Trigger**: `@heymax_shop_bot merchant_name`
-- **Function**: `handleInlineQuery()` in main bot file
-- **Process**: Fuzzy search → merchant matching → affiliate link generation
+The main bot logic follows a webhook-based request/response pattern:
 
-### 2. Viral Keyboard Generation
+1. **Webhook Handler** → Routes to appropriate function based on update type
+2. **Inline Query** → `handleInlineQuery()` → Fuzzy merchant search → Link generation
+3. **Callback Query** → `handleCallbackQuery()` → Viral link creation → Database tracking
+4. **Message Handler** → `/start` and `/help` commands
 
-- **Function**: `generateViralKeyboard()`
-- **Mechanic**: "Get MY Unique Link" buttons with user-specific display names
-- **Format**: Uses Telegram deep links (`https://t.me/botusername`)
+### Key Functions & Their Purpose
 
-### 3. Callback Query Handling
+```typescript
+// Primary request router - handles all Telegram updates
+serve(async (req) => { ... })
 
-- **Function**: `handleCallbackQuery()`
-- **Purpose**: Process viral link generation requests
-- **Tracking**: Records viral interactions for coefficient analysis
+// Inline query processing - core functionality
+async function handleInlineQuery(query: TelegramInlineQuery) { ... }
 
-### 4. Database Operations
+// Viral mechanics - creates "Get MY Link" buttons
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) { ... }
 
-- **Users**: Telegram user tracking with activity metrics
-- **Merchants**: Singapore merchant data with Max Miles rates
-- **Link Generations**: Affiliate link tracking with UTM parameters
-- **Viral Interactions**: Viral loop tracking for growth analysis
+// Merchant fuzzy search - calculateMatchScore algorithm
+function calculateMatchScore(query: string, merchantName: string): number { ... }
+
+// Database operations - user tracking and analytics
+async function createUser(user: TelegramUser) { ... }
+async function logLinkGeneration(...) { ... }
+async function logViralInteraction(...) { ... }
+```
+
+### Database Architecture
+
+- **users**: Telegram user tracking with activity metrics  
+- **merchants**: 187 Singapore merchants with Max Miles rates
+- **link_generations**: Affiliate link tracking with UTM parameters
+- **viral_interactions**: Viral loop tracking for coefficient analysis
+
+### Critical Configuration
+
+**supabase/config.toml line 327-328:**
+```toml
+[functions.telegram-bot]
+verify_jwt = false  # REQUIRED - Telegram webhooks can't provide JWTs
+```
 
 ## Development Patterns
 
@@ -291,28 +331,49 @@ verify_jwt = false  # Required for Telegram webhook access
 - **Performance**: Response times, error rates, function invocations
 - **Cost Management**: Free-tier usage monitoring
 
-## Development Best Practices
+## Development Workflow Patterns
 
-### 1. TDD Approach
+### TDD Methodology (CRITICAL - This codebase is TDD-first)
 
-- Write failing tests first (RED)
-- Implement minimal feature (GREEN)
-- Refactor for quality (REFACTOR)
-- Use `npm run test:watch` for continuous feedback
+**Red-Green-Refactor Cycle:**
+1. **RED**: Write failing test first (`npm run test:watch` for continuous feedback)
+2. **GREEN**: Implement minimal code to pass test 
+3. **REFACTOR**: Improve code quality while keeping tests green
 
-### 2. Code Organization
+**Test File Organization:**
+- `tests/unit/telegram-bot*.test.ts` - Core bot functionality tests
+- `tests/integration/database.test.ts` - Database operation tests  
+- `tests/performance/performance-validation.test.ts` - Load testing
 
-- Single responsibility principle
-- Clear function naming and documentation
-- Consistent error handling patterns
-- Proper TypeScript typing throughout
+### Local Development Pattern
 
-### 3. Deployment Safety
+```bash
+# Start TDD development session
+npm run test:watch                    # Terminal 1: Continuous testing
+supabase start                       # Terminal 2: Start services  
+supabase functions serve             # Terminal 3: Function dev server
+# Edit supabase/functions/telegram-bot/index.ts in Terminal 4
+```
 
-- Always test locally before production
-- Use deployment script validation steps
-- Monitor health checks after deployment
-- Maintain rollback capabilities
+### Code Modification Strategy
+
+**When adding features:**
+1. **Test First**: Add failing test in appropriate test file
+2. **Minimal Implementation**: Add code in `supabase/functions/telegram-bot/index.ts`
+3. **Validate**: Ensure all 43 tests still pass
+4. **Database Changes**: Add migration in `supabase/migrations/` if needed
+
+**When debugging:**
+1. **Isolate**: Use single test execution (`npm test -- tests/unit/telegram-bot.test.ts`)
+2. **Trace**: Check Supabase logs (`supabase functions logs`)
+3. **Test Locally**: Use `supabase functions serve` with test webhook calls
+
+### Deployment Safety Protocol
+
+- **Always test locally first** (`npm run pipeline`)
+- **Use deployment script validation** (`./scripts/production-deploy.sh`)
+- **Monitor health after deployment** (analytics endpoint)
+- **Maintain rollback capability** (git commit before deployment)
 
 ## Quick Start for New Developers
 
