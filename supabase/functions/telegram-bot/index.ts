@@ -90,7 +90,8 @@ const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "test-key";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Telegram Bot Token with fallback for testing
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "test-bot-token";
+const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") ||
+  "test-bot-token";
 
 // Global bot info cache
 let BOT_INFO: {
@@ -136,7 +137,7 @@ async function getBotInfo() {
 serve(async (req) => {
   try {
     // Initialize bot info on first request (cached afterwards) - non-blocking
-    getBotInfo().catch(error => {
+    getBotInfo().catch((error) => {
       console.warn("Bot info initialization failed, using defaults:", error);
     });
 
@@ -220,20 +221,25 @@ serve(async (req) => {
     return new Response("OK", { status: 200 });
   } catch (error) {
     console.error("Error processing update:", error);
-    
+
     // For debugging: if error is in inline query, provide details
-    if (typeof error === 'object' && error !== null && 'message' in error) {
+    if (typeof error === "object" && error !== null && "message" in error) {
       console.error("Error details:", error.message);
-      console.error("Error stack:", error.stack);
+      if ("stack" in error && typeof error.stack === "string") {
+        console.error("Error stack:", error.stack);
+      }
     }
-    
+
     // In test environment or when TELEGRAM_BOT_TOKEN is missing/test token, be more lenient
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
-    if (Deno.env.get("ENVIRONMENT") === "test" || botToken === "test-bot-token" || botToken.startsWith("test-")) {
+    if (
+      Deno.env.get("ENVIRONMENT") === "test" || botToken === "test-bot-token" ||
+      botToken.startsWith("test-")
+    ) {
       console.warn("Test environment detected, returning OK instead of error");
       return new Response("OK", { status: 200 });
     }
-    
+
     return new Response("Error", { status: 500 });
   }
 });
