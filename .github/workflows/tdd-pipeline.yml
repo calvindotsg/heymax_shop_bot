@@ -389,10 +389,11 @@ jobs:
       - name: Run performance benchmarks
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
         run: |
           echo "⚡ Running performance benchmarks..."
 
-          # Run existing performance tests
+          # Run existing performance tests with Supabase
           deno test \
             --allow-all \
             --reporter=pretty \
@@ -410,7 +411,7 @@ jobs:
             --allow-all \
             --reporter=pretty \
             tests/performance/performance-validation.test.ts \
-            || echo "⚠️ Performance tests may require live server - continuing"
+            || echo "⚠️ Some performance tests may have failed - checking results"
 
           echo "✅ Load tests completed"
 
