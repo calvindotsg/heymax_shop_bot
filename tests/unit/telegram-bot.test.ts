@@ -4,12 +4,26 @@ import {
   assertStringIncludes,
 } from "testing/asserts.ts";
 
+import {
+  calculateMatchScore,
+  countCommonChars,
+  generateEnhancedBotResponse,
+  generateViralKeyboard,
+  validateInlineQueryStructure,
+  generateAffiliateLink,
+  validateUserUpsertData,
+  generateInlineQueryResult,
+  MOCK_MERCHANTS,
+  type TelegramInlineQuery,
+  type Merchant,
+} from "../../src/utils/bot-functions.ts";
+
 // TDD Tests for Telegram Bot Edge Function
 // These tests validate the core bot functionality following TDD principles
 
 Deno.test("Telegram Bot Handler - should handle inline query structure", () => {
   // Mock Telegram inline query structure
-  const mockInlineQuery = {
+  const mockInlineQuery: TelegramInlineQuery = {
     id: "12345",
     from: {
       id: 123456789,
@@ -21,6 +35,10 @@ Deno.test("Telegram Bot Handler - should handle inline query structure", () => {
     offset: "",
   };
 
+  // Test structure validation using utility function
+  const isValid = validateInlineQueryStructure(mockInlineQuery);
+  assertEquals(isValid, true, "Inline query structure should be valid");
+  
   // Test structure validation
   assertExists(mockInlineQuery.id, "Inline query should have id");
   assertExists(mockInlineQuery.from, "Inline query should have from user");
@@ -34,18 +52,53 @@ Deno.test("Telegram Bot Handler - should handle inline query structure", () => {
 
 Deno.test("Merchant Search Logic - should handle empty search term", () => {
   const searchTerm = "";
-  const expectedBehavior = "return top merchants";
-
-  // Empty search should trigger "top merchants" behavior
+  
+  // Test match score for empty search
+  const score = calculateMatchScore("Amazon Singapore", searchTerm);
   assertEquals(
-    searchTerm.length === 0,
-    true,
-    "Empty search term should be handled",
+    score,
+    0,
+    "Empty search term should return 0 score",
   );
+});
+
+Deno.test("Merchant Search Logic - should handle search with term", () => {
+  const searchTerm = "amazon";
+  const merchantName = "Amazon Singapore";
+  
+  // Test fuzzy match scoring
+  const score = calculateMatchScore(merchantName, searchTerm);
+  assertEquals(
+    score > 0.5,
+    true,
+    "Should return high score for good matches",
+  );
+});
+
+Deno.test("Link Personalization - should replace USER_ID placeholder", () => {
+  const userId = 123456;
+  const merchantSlug = "amazon";
+  const trackingLink = "https://amazon.sg/?ref={{USER_ID}}";
+  
+  // Test affiliate link generation
+  const affiliateData = generateAffiliateLink(userId, merchantSlug, trackingLink);
+  
   assertStringIncludes(
-    expectedBehavior,
-    "top merchants",
-    "Should return top merchants for empty search",
+    affiliateData.affiliate_link,
+    "123456",
+    "Should replace USER_ID with actual user ID",
+  );
+  
+  assertStringIncludes(
+    affiliateData.affiliate_link,
+    "utm_source=telegram",
+    "Should include UTM tracking parameters",
+  );
+  
+  assertEquals(
+    affiliateData.tracking_id.startsWith("tg_123456_amazon_"),
+    true,
+    "Should generate proper tracking ID",
   );
 });
 

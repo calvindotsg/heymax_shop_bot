@@ -4,6 +4,17 @@ import {
   assertStringIncludes,
 } from "testing/asserts.ts";
 
+import {
+  calculateMatchScore,
+  countCommonChars,
+  generateEnhancedBotResponse,
+  generateViralKeyboard,
+  generateAffiliateLink,
+  MOCK_MERCHANTS,
+  type TelegramInlineQuery,
+  type Merchant,
+} from "../../src/utils/bot-functions.ts";
+
 // TDD Tests for Sprint 2 Enhanced Telegram Bot Edge Function
 // These tests validate the enhanced bot functionality with fuzzy search and analytics
 

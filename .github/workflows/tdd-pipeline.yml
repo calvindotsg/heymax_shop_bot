@@ -186,12 +186,12 @@ jobs:
         run: |
           echo "🧪 Running unit tests with coverage..."
 
-          # Run unit tests with timeout
-          timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
+          # Run unit tests with timeout (use bash for timeout compatibility)
+          bash -c "timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
             --coverage=coverage/ \
             --reporter=pretty \
-            tests/unit/ \
+            tests/unit/" \
             || (echo "❌ Unit tests failed or timed out" && exit 1)
 
           echo "✅ Unit tests completed"
