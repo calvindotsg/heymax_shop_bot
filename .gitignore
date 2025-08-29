@@ -71,6 +71,7 @@ coverage/
 # Temporary files
 tmp/
 temp/
+deno.lock
 
 # Proprietary files
 dataset/

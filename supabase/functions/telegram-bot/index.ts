@@ -60,7 +60,8 @@ interface TelegramInlineQueryResult {
   reply_markup?: {
     inline_keyboard: Array<Array<{
       text: string;
-      url: string;
+      url?: string;
+      callback_data?: string;
     }>>;
   };
   description?: string;
@@ -185,7 +186,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
 
   try {
     // Upsert user in database with enhanced tracking
-    await upsertUser(userId, username);
+    await upsertUser(userId, username || `user_${userId}`);
 
     // Handle empty query - show popular merchants
     if (!searchTerm) {
@@ -237,7 +238,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
             parse_mode: "Markdown"
           },
           reply_markup: await generateViralKeyboard(userId, username, merchant, affiliateData.affiliate_link),
-          thumbnail_url: merchant.logo_url || "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
+          thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png"
         };
       })
     );
@@ -537,10 +538,16 @@ async function trackEnhancedLinkGeneration(userId: number, merchants: any[], sea
     }
 
     // Update user link count
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('link_count')
+      .eq('id', userId)
+      .single();
+    
     await supabase
       .from('users')
       .update({ 
-        link_count: supabase.raw('link_count + 1'),
+        link_count: (currentUser?.link_count || 0) + 1,
         last_activity: new Date().toISOString()
       })
       .eq('id', userId);
@@ -568,7 +575,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
     
     if (action === 'generate') {
       // Ensure viral user exists in database
-      await upsertUser(userId, username);
+      await upsertUser(userId, username || `user_${userId}`);
       
       // Get merchant information
       const { data: merchant, error } = await supabase
@@ -630,7 +637,7 @@ async function handleMessage(message: TelegramMessage) {
   try {
     // Handle /start command
     if (message.text.startsWith('/start')) {
-      await upsertUser(userId, username);
+      await upsertUser(userId, username || `user_${userId}`);
       await handleStartCommand(message);
       return;
     }
@@ -790,49 +797,49 @@ async function getAnalyticsSummary() {
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Get user metrics
-    const { data: totalUsersResult } = await supabase
+    const { count: totalUsersCount } = await supabase
       .from('users')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
-    const { data: activeUsers24h } = await supabase
+    const { count: activeUsers24hCount } = await supabase
       .from('users')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('last_activity', oneDayAgo.toISOString());
 
-    const { data: activeUsers7d } = await supabase
+    const { count: activeUsers7dCount } = await supabase
       .from('users')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('last_activity', oneWeekAgo.toISOString());
 
     // Get link generation metrics
-    const { data: totalLinks } = await supabase
+    const { count: totalLinksCount } = await supabase
       .from('link_generations')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
-    const { data: links24h } = await supabase
+    const { count: links24hCount } = await supabase
       .from('link_generations')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('generated_at', oneDayAgo.toISOString());
 
-    const { data: links7d } = await supabase
+    const { count: links7dCount } = await supabase
       .from('link_generations')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('generated_at', oneWeekAgo.toISOString());
 
     // Get viral interaction metrics
-    const { data: totalViralInteractions } = await supabase
+    const { count: totalViralInteractionsCount } = await supabase
       .from('viral_interactions')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
-    const { data: viralInteractions7d } = await supabase
+    const { count: viralInteractions7dCount } = await supabase
       .from('viral_interactions')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('created_at', oneWeekAgo.toISOString());
 
     // Get search analytics
-    const { data: totalSearches } = await supabase
+    const { count: totalSearchesCount } = await supabase
       .from('search_analytics')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('query_timestamp', oneWeekAgo.toISOString());
 
     const { data: avgResultsPerSearch } = await supabase
@@ -863,7 +870,7 @@ async function getAnalyticsSummary() {
       .map(([merchant, count]) => ({ merchant, count }));
 
     // Calculate average search results
-    const avgResults = avgResultsPerSearch?.length > 0 
+    const avgResults = avgResultsPerSearch && avgResultsPerSearch.length > 0 
       ? avgResultsPerSearch.reduce((sum, item) => sum + (item.results_count || 0), 0) / avgResultsPerSearch.length 
       : 0;
 
@@ -877,22 +884,22 @@ async function getAnalyticsSummary() {
     return {
       timestamp: now.toISOString(),
       user_metrics: {
-        total_users: totalUsersResult?.count || 0,
-        active_users_24h: activeUsers24h?.count || 0,
-        active_users_7d: activeUsers7d?.count || 0
+        total_users: totalUsersCount || 0,
+        active_users_24h: activeUsers24hCount || 0,
+        active_users_7d: activeUsers7dCount || 0
       },
       link_metrics: {
-        total_links_generated: totalLinks?.count || 0,
-        links_generated_24h: links24h?.count || 0,
-        links_generated_7d: links7d?.count || 0
+        total_links_generated: totalLinksCount || 0,
+        links_generated_24h: links24hCount || 0,
+        links_generated_7d: links7dCount || 0
       },
       viral_metrics: {
-        total_viral_interactions: totalViralInteractions?.count || 0,
-        viral_interactions_7d: viralInteractions7d?.count || 0,
+        total_viral_interactions: totalViralInteractionsCount || 0,
+        viral_interactions_7d: viralInteractions7dCount || 0,
         viral_coefficient_7d: viralCoefficientResult || 0
       },
       search_metrics: {
-        total_searches_7d: totalSearches?.count || 0,
+        total_searches_7d: totalSearchesCount || 0,
         avg_results_per_search: Math.round(avgResults * 100) / 100
       },
       top_merchants_7d: topMerchantsRanked,
@@ -921,12 +928,12 @@ async function checkFunctionInvocationLimits() {
   try {
     // This would integrate with Supabase monitoring APIs in production
     // For now, we'll track basic metrics
-    const { data: recentInvocations } = await supabase
+    const { count: recentInvocationsCount } = await supabase
       .from('link_generations')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('generated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-    const monthlyInvocations = (recentInvocations?.count || 0) * 2; // Rough estimate
+    const monthlyInvocations = (recentInvocationsCount || 0) * 2; // Rough estimate
     const freetierLimit = 500000; // Supabase free tier limit
     const usagePercentage = (monthlyInvocations / freetierLimit) * 100;
 
@@ -951,7 +958,12 @@ async function checkFunctionInvocationLimits() {
 // Real-time viral coefficient monitoring
 async function getViralCoefficientTrend(days: number = 7) {
   try {
-    const dailyCoefficients = [];
+    const dailyCoefficients: Array<{
+      date: string;
+      coefficient: number;
+      users: number;
+      viral_interactions: number;
+    }> = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const dayStart = new Date();
@@ -961,30 +973,30 @@ async function getViralCoefficientTrend(days: number = 7) {
       const dayEnd = new Date(dayStart);
       dayEnd.setHours(23, 59, 59, 999);
       
-      // Get daily users
-      const { data: dailyUsers } = await supabase
-        .from('users')
-        .select('id', { count: 'exact', head: true })
-        .lte('first_seen', dayEnd.toISOString())
-        .gte('last_activity', dayStart.toISOString());
-      
-      // Get daily viral interactions
-      const { data: dailyViral } = await supabase
-        .from('viral_interactions')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', dayStart.toISOString())
-        .lt('created_at', dayEnd.toISOString());
-      
-      const coefficient = (dailyUsers?.count || 0) > 0 
-        ? (dailyViral?.count || 0) / (dailyUsers?.count || 1) 
-        : 0;
-      
-      dailyCoefficients.push({
-        date: dayStart.toISOString().split('T')[0],
-        coefficient: Math.round(coefficient * 100) / 100,
-        users: dailyUsers?.count || 0,
-        viral_interactions: dailyViral?.count || 0
-      });
+    // Get daily users
+    const { count: dailyUsersCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .lte('first_seen', dayEnd.toISOString())
+      .gte('last_activity', dayStart.toISOString());
+    
+    // Get daily viral interactions
+    const { count: dailyViralCount } = await supabase
+      .from('viral_interactions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', dayStart.toISOString())
+      .lt('created_at', dayEnd.toISOString());
+    
+    const coefficient = (dailyUsersCount || 0) > 0 
+      ? (dailyViralCount || 0) / (dailyUsersCount || 1) 
+      : 0;
+    
+    dailyCoefficients.push({
+      date: dayStart.toISOString().split('T')[0],
+      coefficient: Math.round(coefficient * 100) / 100,
+      users: dailyUsersCount || 0,
+      viral_interactions: dailyViralCount || 0
+    });
     }
     
     return dailyCoefficients;

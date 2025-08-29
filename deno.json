@@ -1,5 +1,5 @@
 {
-  "nodeModulesDir": true,
+  "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno run --allow-env --allow-net --allow-read --allow-write --watch supabase/functions/telegram-bot/index.ts",
     "test": "deno test --allow-env --allow-net --allow-read --allow-write tests/",
