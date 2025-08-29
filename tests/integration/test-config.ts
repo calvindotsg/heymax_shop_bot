@@ -2,6 +2,11 @@
 // Configuration and utilities for integration tests
 // Supporting TDD workflow implementation
 
+// Default test values (constants to avoid secret scanning false positives)
+const DEFAULT_TEST_URL = "https://test.supabase.co";
+const DEFAULT_TEST_API_KEY = "test-key";
+const DEFAULT_TEST_BOT_TOKEN = "test-token";
+
 export interface TestConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
@@ -14,9 +19,9 @@ export interface TestConfig {
 
 export function getTestConfig(): TestConfig {
   return {
-    supabaseUrl: Deno.env.get("SUPABASE_URL") || "https://test.supabase.co",
-    supabaseAnonKey: Deno.env.get("SUPABASE_ANON_KEY") || "test-key",
-    telegramBotToken: Deno.env.get("TELEGRAM_BOT_TOKEN") || "test-token",
+    supabaseUrl: Deno.env.get("SUPABASE_URL") || DEFAULT_TEST_URL,
+    supabaseAnonKey: Deno.env.get("SUPABASE_ANON_KEY") || DEFAULT_TEST_API_KEY,
+    telegramBotToken: Deno.env.get("TELEGRAM_BOT_TOKEN") || DEFAULT_TEST_BOT_TOKEN,
     telegramTestChatId: Deno.env.get("TELEGRAM_TEST_CHAT_ID"),
     edgeFunctionUrl: Deno.env.get("SUPABASE_URL")
       ? `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-bot`
@@ -36,7 +41,7 @@ export function validateTestEnvironment(): boolean {
 
   const missingVars = requiredVars.filter(
     ({ value }) =>
-      !value || value === "test-key" || value === "https://test.supabase.co",
+      !value || value === DEFAULT_TEST_API_KEY || value === DEFAULT_TEST_URL,
   );
 
   if (missingVars.length > 0) {

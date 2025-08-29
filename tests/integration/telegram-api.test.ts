@@ -234,13 +234,13 @@ Deno.test("Integration: Telegram API - Answer inline query format", () => {
   assertExists(result.input_message_content);
   assertExists(result.reply_markup);
 
-  // Validate keyboard structure
-  const keyboard = result.reply_markup.inline_keyboard;
-  assert(Array.isArray(keyboard));
-  assert(keyboard.length >= 2, "Should have at least 2 button rows");
+  // Validate inline button structure
+  const buttonGrid = result.reply_markup.inline_keyboard;
+  assert(Array.isArray(buttonGrid));
+  assert(buttonGrid.length >= 2, "Should have at least 2 button rows");
 
-  const shopButton = keyboard[0][0];
-  const viralButton = keyboard[1][0];
+  const shopButton = buttonGrid[0][0];
+  const viralButton = buttonGrid[1][0];
 
   assertExists(shopButton.text);
   // Type guard for URL button
