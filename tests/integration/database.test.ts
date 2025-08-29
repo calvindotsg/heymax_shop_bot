@@ -10,20 +10,24 @@ import {
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Test configuration - Environment-based with smart fallback
-const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ?? 
+const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
   Deno.env.get("TEST_SUPABASE_URL") ??
   "https://test.supabase.co"; // Production fallback for testing
-const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ?? 
+const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ??
   Deno.env.get("TEST_SUPABASE_ANON_KEY") ??
   "test-key"; // Production fallback
 
 // Test environment detection
-const isLocalTest = supabaseUrl.includes("127.0.0.1") || supabaseUrl.includes("localhost");
-console.log(`🔧 Running integration tests against: ${isLocalTest ? "LOCAL" : "REMOTE"} database`);
+const isLocalTest = supabaseUrl.includes("127.0.0.1") ||
+  supabaseUrl.includes("localhost");
+console.log(
+  `🔧 Running integration tests against: ${
+    isLocalTest ? "LOCAL" : "REMOTE"
+  } database`,
+);
 
 // Test safety: Add prefix for test data to avoid conflicts
 const TEST_USER_PREFIX = isLocalTest ? "test_" : "integration_test_";
-
 
 const testClient = createClient(
   supabaseUrl || "https://test.supabase.co",
@@ -97,14 +101,14 @@ Deno.test("Integration: Database Schema - Link generations tracking", async () =
   await cleanupTestData();
 
   const testUserId = 6543210987;
-  
+
   // Create a test merchant first
   const merchantSlug = "integration-test-merchant";
   await testClient
     .from("merchants")
     .insert({
       merchant_slug: merchantSlug,
-      merchant_name: "Integration Test Merchant", 
+      merchant_name: "Integration Test Merchant",
       tracking_link: "https://test.example.com/?ref={user_id}",
       base_mpd: 5.0,
     });
@@ -144,7 +148,7 @@ Deno.test("Integration: Database Schema - Viral interactions tracking", async ()
 
   const originalUserId = 1111110987;
   const viralUserId = 2222220987;
-  
+
   // Create a test merchant first
   const merchantSlug = "integration-viral-test-merchant";
   await testClient

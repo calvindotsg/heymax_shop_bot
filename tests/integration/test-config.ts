@@ -21,7 +21,8 @@ export function getTestConfig(): TestConfig {
   return {
     supabaseUrl: Deno.env.get("SUPABASE_URL") || DEFAULT_TEST_URL,
     supabaseAnonKey: Deno.env.get("SUPABASE_ANON_KEY") || DEFAULT_TEST_API_KEY,
-    telegramBotToken: Deno.env.get("TELEGRAM_BOT_TOKEN") || DEFAULT_TEST_BOT_TOKEN,
+    telegramBotToken: Deno.env.get("TELEGRAM_BOT_TOKEN") ||
+      DEFAULT_TEST_BOT_TOKEN,
     telegramTestChatId: Deno.env.get("TELEGRAM_TEST_CHAT_ID"),
     edgeFunctionUrl: Deno.env.get("SUPABASE_URL")
       ? `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-bot`
