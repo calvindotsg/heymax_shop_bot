@@ -30,6 +30,6 @@
   "author": "HeyMax Team",
   "license": "MIT",
   "devDependencies": {
-    "@supabase/cli": "^2.39.2"
+    "supabase": "^2.39.2"
   }
 }
