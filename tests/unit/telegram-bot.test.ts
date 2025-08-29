@@ -7,15 +7,15 @@ import {
 import {
   calculateMatchScore,
   countCommonChars,
-  generateEnhancedBotResponse,
-  generateViralKeyboard,
-  validateInlineQueryStructure,
   generateAffiliateLink,
-  validateUserUpsertData,
+  generateEnhancedBotResponse,
   generateInlineQueryResult,
+  generateViralKeyboard,
+  type Merchant,
   MOCK_MERCHANTS,
   type TelegramInlineQuery,
-  type Merchant,
+  validateInlineQueryStructure,
+  validateUserUpsertData,
 } from "../../src/utils/bot-functions.ts";
 
 // TDD Tests for Telegram Bot Edge Function
@@ -38,7 +38,7 @@ Deno.test("Telegram Bot Handler - should handle inline query structure", () => {
   // Test structure validation using utility function
   const isValid = validateInlineQueryStructure(mockInlineQuery);
   assertEquals(isValid, true, "Inline query structure should be valid");
-  
+
   // Test structure validation
   assertExists(mockInlineQuery.id, "Inline query should have id");
   assertExists(mockInlineQuery.from, "Inline query should have from user");
@@ -52,7 +52,7 @@ Deno.test("Telegram Bot Handler - should handle inline query structure", () => {
 
 Deno.test("Merchant Search Logic - should handle empty search term", () => {
   const searchTerm = "";
-  
+
   // Test match score for empty search
   const score = calculateMatchScore("Amazon Singapore", searchTerm);
   assertEquals(
@@ -65,7 +65,7 @@ Deno.test("Merchant Search Logic - should handle empty search term", () => {
 Deno.test("Merchant Search Logic - should handle search with term", () => {
   const searchTerm = "amazon";
   const merchantName = "Amazon Singapore";
-  
+
   // Test fuzzy match scoring
   const score = calculateMatchScore(merchantName, searchTerm);
   assertEquals(
@@ -79,22 +79,26 @@ Deno.test("Link Personalization - should replace USER_ID placeholder", () => {
   const userId = 123456;
   const merchantSlug = "amazon";
   const trackingLink = "https://amazon.sg/?ref={{USER_ID}}";
-  
+
   // Test affiliate link generation
-  const affiliateData = generateAffiliateLink(userId, merchantSlug, trackingLink);
-  
+  const affiliateData = generateAffiliateLink(
+    userId,
+    merchantSlug,
+    trackingLink,
+  );
+
   assertStringIncludes(
     affiliateData.affiliate_link,
     "123456",
     "Should replace USER_ID with actual user ID",
   );
-  
+
   assertStringIncludes(
     affiliateData.affiliate_link,
     "utm_source=telegram",
     "Should include UTM tracking parameters",
   );
-  
+
   assertEquals(
     affiliateData.tracking_id.startsWith("tg_123456_amazon_"),
     true,

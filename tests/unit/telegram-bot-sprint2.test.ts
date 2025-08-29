@@ -7,12 +7,12 @@ import {
 import {
   calculateMatchScore,
   countCommonChars,
+  generateAffiliateLink,
   generateEnhancedBotResponse,
   generateViralKeyboard,
-  generateAffiliateLink,
+  type Merchant,
   MOCK_MERCHANTS,
   type TelegramInlineQuery,
-  type Merchant,
 } from "../../src/utils/bot-functions.ts";
 
 // TDD Tests for Sprint 2 Enhanced Telegram Bot Edge Function

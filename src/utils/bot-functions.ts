@@ -68,7 +68,10 @@ export interface AffiliateData {
 // Utility functions for testing
 
 // Calculate fuzzy match score for merchant search
-export function calculateMatchScore(merchantName: string, searchTerm: string): number {
+export function calculateMatchScore(
+  merchantName: string,
+  searchTerm: string,
+): number {
   const name = merchantName.toLowerCase();
   const term = searchTerm.toLowerCase().trim();
 
@@ -144,7 +147,9 @@ export function generateEnhancedBotResponse(
 
 💡 **Discover more**: Try @heymax_shop_bot amazon, trip.com, klook...
 
-📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
+📋 **More details & terms**: https://heymax.ai/merchant/${
+    encodeURIComponent(merchant.merchant_name)
+  }`;
 }
 
 // Generate viral keyboard
@@ -160,7 +165,8 @@ export function generateViralKeyboard(
     inline_keyboard: [
       [
         {
-          text: `🛍️ Shop ${merchant.merchant_name} & Earn Miles (${displayName})`,
+          text:
+            `🛍️ Shop ${merchant.merchant_name} & Earn Miles (${displayName})`,
           url: affiliateLink,
         },
       ],
@@ -175,7 +181,9 @@ export function generateViralKeyboard(
 }
 
 // Validate inline query structure
-export function validateInlineQueryStructure(query: TelegramInlineQuery): boolean {
+export function validateInlineQueryStructure(
+  query: TelegramInlineQuery,
+): boolean {
   return !!(
     query &&
     query.id &&
@@ -251,7 +259,8 @@ export function generateInlineQueryResult(
       parse_mode: "Markdown",
     },
     reply_markup,
-    thumbnail_url: "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png",
+    thumbnail_url:
+      "https://storage.googleapis.com/max-sg/assets/heymax_logo_square.png",
   };
 }
 
