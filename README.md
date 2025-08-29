@@ -2,10 +2,9 @@
 
 > Telegram inline bot that transforms group chats into Max Miles earning opportunities through viral social commerce.
 
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen)](https://github.com/calvindotsg/heymax_shop_bot)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](#testing)
+[![TDD Pipeline](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml/badge.svg)](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml)
 [![Supabase](https://img.shields.io/badge/platform-Supabase%20Edge%20Functions-blue)](https://supabase.com)
+[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/calvindotsg/heymax_shop_bot/main)](https://github.com/calvindotsg/heymax_shop_bot/commits/main/)
 
 ## 🚀 What is HeyMax Shop Bot?
 
@@ -97,16 +96,16 @@ npm run test:performance
 ### Example Flow
 
 ```
-User: @heymax_shop_bot pelago
+User: @heymax_shop_bot amazon
 
 Bot Response:
-🎯 @username, your Pelago link is ready!
+🎯 @username, your Amazon link is ready!
 ✨ Earn 8.0 Max Miles per $1 spent
 💰 Example: Spend $100 → Earn 800 Max Miles
-🚀 Your personalized link: [Pelago Link]
-⚡ Others: Tap "Get MY Link" to earn Max Miles at Pelago too!
+🚀 Your personalized link: [Amazon Link]
+⚡ Others: Tap "Get MY Link" to earn Max Miles at Amazon too!
 
-[🛍️ Shop Pelago & Earn Miles] [⚡ Get MY Unique Link for Pelago (@username)]
+[🛍️ Shop Amazon & Earn Miles (@username)] [⚡ Get MY Unique Link for Amazon]
 ```
 
 ## 🧪 Testing
@@ -300,7 +299,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Commercial Support  
 For enterprise deployment and custom features:
-- **Email**: hello@heymax.ai
+- **Email**: help@heymax.ai
 - **Website**: [heymax.ai](https://heymax.ai)
 - **Business Development**: Scaling across Asia Pacific markets
 
