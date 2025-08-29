@@ -134,6 +134,7 @@ Deno.test("Integration: Edge Function - Callback query processing", async () => 
         is_bot: false,
       },
       data: "generate:apple:123456",
+      chat_instance: "test-chat-instance",
       message: {
         message_id: 456,
         date: Math.floor(Date.now() / 1000),
