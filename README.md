@@ -129,29 +129,38 @@ Bot Response:
 
 ## 🧪 Testing
 
-Comprehensive test suite with 100% core functionality coverage:
+Comprehensive test suite with 43/43 tests passing and TDD-driven development:
 
 ```bash
 # Unit tests (30 test cases)
-npm run test -- tests/unit/
+npm run test:unit
 
-# Integration tests (8 test cases) 
-npm run test -- tests/integration/
+# Integration tests (comprehensive TDD suite)
+npm run test:integration
 
-# Performance tests (5 test cases)
+# Quick integration test run
+npm run test:integration:quick
+
+# Performance tests (5 test cases) 
 npm run test:performance
 
-# Full pipeline
+# Full TDD pipeline
 npm run pipeline
+
+# Watch mode for TDD development
+npm run test:watch
 ```
 
-### Test Categories
+### TDD-Enhanced Test Categories
 
-- **Unit Tests**: Core bot functionality, affiliate link generation, viral
-  mechanics
-- **Integration Tests**: Database operations, Telegram API integration
-- **Performance Tests**: Load testing with Artillery (100+ concurrent users)
-- **E2E Tests**: Complete user journey validation
+- **Unit Tests**: Core bot functionality, affiliate link generation, viral mechanics
+- **Integration Tests**: 
+  - Database schema validation and operations
+  - Telegram Bot API integration and webhook handling
+  - Supabase Edge Function integration with production endpoints
+  - End-to-end viral flow validation and coefficient tracking
+- **Performance Tests**: Load testing with concurrent user simulation
+- **Coverage Requirements**: >80% overall, >90% critical components
 
 ## 📊 Analytics & Monitoring
 

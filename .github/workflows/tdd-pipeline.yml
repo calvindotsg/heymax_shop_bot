@@ -292,13 +292,100 @@ jobs:
           
           echo "✅ Test environment configured for production Supabase"
 
-      - name: Run integration tests
+      - name: Validate integration test files
+        run: |
+          echo "🔍 Validating integration test files..."
+          
+          # Check that all required integration test files exist
+          required_files=(
+            "tests/integration/database.test.ts"
+            "tests/integration/telegram-api.test.ts" 
+            "tests/integration/edge-function.test.ts"
+            "tests/integration/viral-flow.test.ts"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required integration test: $file"
+              exit 1
+            fi
+            echo "✅ Found: $file"
+          done
+          
+          echo "✅ All integration test files validated"
+
+      - name: Run database integration tests
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
+        run: |
+          echo "🗄️ Running database integration tests..."
+          
+          timeout 30 deno test \
+            --allow-all \
+            --coverage=integration-coverage/ \
+            --reporter=pretty \
+            tests/integration/database.test.ts \
+            || (echo "❌ Database integration tests failed" && exit 1)
+          
+          echo "✅ Database integration tests completed"
+
+      - name: Run Telegram API integration tests
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN_TEST }}
+          TELEGRAM_TEST_CHAT_ID: ${{ secrets.TELEGRAM_TEST_CHAT_ID }}
+        run: |
+          echo "🤖 Running Telegram API integration tests..."
+          
+          timeout 45 deno test \
+            --allow-all \
+            --coverage=integration-coverage/ \
+            --reporter=pretty \
+            tests/integration/telegram-api.test.ts \
+            || (echo "❌ Telegram API integration tests failed" && exit 1)
+          
+          echo "✅ Telegram API integration tests completed"
+
+      - name: Run edge function integration tests
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
+        run: |
+          echo "⚡ Running edge function integration tests..."
+          
+          timeout 60 deno test \
+            --allow-all \
+            --coverage=integration-coverage/ \
+            --reporter=pretty \
+            tests/integration/edge-function.test.ts \
+            || (echo "❌ Edge function integration tests failed" && exit 1)
+          
+          echo "✅ Edge function integration tests completed"
+
+      - name: Run viral flow integration tests  
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
+        run: |
+          echo "🦠 Running viral flow integration tests..."
+          
+          timeout 90 deno test \
+            --allow-all \
+            --coverage=integration-coverage/ \
+            --reporter=pretty \
+            tests/integration/viral-flow.test.ts \
+            || (echo "❌ Viral flow integration tests failed" && exit 1)
+          
+          echo "✅ Viral flow integration tests completed"
+
+      - name: Run all integration tests (comprehensive)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN_TEST }}
+          TELEGRAM_TEST_CHAT_ID: ${{ secrets.TELEGRAM_TEST_CHAT_ID }}
         run: |
-          echo "🧪 Running integration tests..."
+          echo "🧪 Running comprehensive integration test suite..."
 
           timeout ${{ env.MAX_TEST_DURATION_SECONDS }} deno test \
             --allow-all \
@@ -307,12 +394,34 @@ jobs:
             tests/integration/ \
             || (echo "❌ Integration tests failed or timed out" && exit 1)
 
-          echo "✅ Integration tests completed"
+          echo "✅ All integration tests completed successfully"
 
       - name: Generate integration coverage
         run: |
           echo "📊 Generating integration test coverage..."
           deno coverage integration-coverage/ --lcov > integration-coverage/lcov.info
+          
+          # Generate coverage summary
+          deno coverage integration-coverage/ --reporter=pretty
+          
+          # Extract coverage percentage for validation
+          INTEGRATION_COVERAGE=$(deno coverage integration-coverage/ | grep -oE '[0-9]+\.[0-9]+%' | tail -1 | sed 's/%//')
+          echo "INTEGRATION_COVERAGE=$INTEGRATION_COVERAGE" >> $GITHUB_ENV
+          echo "Integration test coverage: $INTEGRATION_COVERAGE%"
+
+      - name: Validate integration coverage requirements
+        run: |
+          echo "🎯 Validating integration test coverage requirements..."
+          
+          COVERAGE=${INTEGRATION_COVERAGE%.*} # Remove decimal part for comparison
+          MIN_INTEGRATION_COVERAGE=70 # Lower requirement for integration tests
+          
+          if [ "$COVERAGE" -lt "$MIN_INTEGRATION_COVERAGE" ]; then
+            echo "❌ Integration test coverage $COVERAGE% below required $MIN_INTEGRATION_COVERAGE%"
+            exit 1
+          fi
+          
+          echo "✅ Integration coverage requirements met: $COVERAGE%"
 
       - name: Upload integration coverage
         uses: actions/upload-artifact@v4

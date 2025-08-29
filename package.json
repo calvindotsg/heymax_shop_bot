@@ -1,35 +1,35 @@
 {
   "name": "heymax-shop-bot",
-  "version": "1.0.0",
-  "description": "Telegram inline bot for HeyMax social commerce with TDD framework",
-  "type": "module",
+  "version": "1.0.0", 
+  "description": "Telegram inline bot for viral social commerce with Max Miles earning",
   "scripts": {
-    "test": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write tests/",
-    "test:coverage": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write --coverage=coverage tests/",
-    "test:performance": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write tests/performance/",
-    "test:watch": "export PATH=\"$HOME/.deno/bin:$PATH\" && deno test --allow-env --allow-net --allow-read --allow-write --watch tests/",
-    "pipeline": "npm run test && npm run test:coverage && npm run test:performance",
-    "setup:local": "supabase init && supabase start",
-    "db:reset": "supabase db reset",
-    "db:migrate": "supabase migration up",
-    "tdd:start": "npm run test:watch"
+    "test": "deno test --allow-all tests/",
+    "test:unit": "deno test --allow-all tests/unit/",
+    "test:integration": "deno run --allow-all tests/integration/run-tests.ts",
+    "test:integration:quick": "deno test --allow-all tests/integration/",
+    "test:performance": "deno test --allow-all tests/performance/",
+    "test:coverage": "deno test --allow-all --coverage=coverage/ tests/",
+    "test:watch": "deno test --allow-all --watch tests/",
+    "setup:local": "supabase start",
+    "db:migrate": "supabase db push --local",
+    "db:reset": "supabase db reset --local", 
+    "functions:serve": "supabase functions serve",
+    "functions:deploy": "supabase functions deploy telegram-bot",
+    "pipeline": "npm run test:unit && npm run test:integration && npm run test:performance",
+    "validate": "deno fmt --check && deno lint && deno check supabase/functions/telegram-bot/index.ts"
   },
   "keywords": [
     "telegram",
-    "bot",
+    "bot", 
     "affiliate",
     "social-commerce",
-    "singapore",
-    "tdd",
-    "supabase"
+    "viral",
+    "supabase",
+    "edge-functions"
   ],
   "author": "HeyMax Team",
   "license": "MIT",
   "devDependencies": {
-    "@supabase/supabase-js": "^2.39.0"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "deno": ">=2.0.0"
+    "@supabase/cli": "^2.39.2"
   }
 }
