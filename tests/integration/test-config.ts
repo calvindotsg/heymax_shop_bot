@@ -124,7 +124,10 @@ export async function cleanupAllTestData(): Promise<void> {
 
     console.log("🧹 Test data cleanup completed");
   } catch (error) {
-    console.warn("⚠️ Test data cleanup warning:", error instanceof Error ? error.message : String(error));
+    console.warn(
+      "⚠️ Test data cleanup warning:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

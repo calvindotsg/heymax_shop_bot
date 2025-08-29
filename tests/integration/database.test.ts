@@ -28,7 +28,10 @@ async function cleanupTestData() {
     );
     await testClient.from("users").delete().lt("id", 1000000); // Only test users
   } catch (error) {
-    console.warn("Cleanup warning:", error instanceof Error ? error.message : String(error));
+    console.warn(
+      "Cleanup warning:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

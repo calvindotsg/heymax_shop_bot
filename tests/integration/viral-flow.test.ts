@@ -53,7 +53,10 @@ async function cleanupViralTestData() {
     await testClient.from("link_generations").delete().gte("user_id", 500000);
     await testClient.from("users").delete().gte("telegram_user_id", 500000);
   } catch (error) {
-    console.warn("Cleanup warning:", error instanceof Error ? error.message : String(error));
+    console.warn(
+      "Cleanup warning:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

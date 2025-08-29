@@ -133,7 +133,11 @@ async function runTestSuite(suite: TestSuite): Promise<TestResult> {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
-    console.error(`❌ ${suite.name} failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `❌ ${suite.name} failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
     return {
       name: suite.name,
       status: "failed",
