@@ -9,10 +9,25 @@ import {
 } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Test configuration
+// Test configuration - Environment-based with smart fallback
+const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ?? 
+  Deno.env.get("TEST_SUPABASE_URL") ??
+  "https://test.supabase.co"; // Production fallback for testing
+const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ?? 
+  Deno.env.get("TEST_SUPABASE_ANON_KEY") ??
+  "test-key"; // Production fallback
+
+// Test environment detection
+const isLocalTest = supabaseUrl.includes("127.0.0.1") || supabaseUrl.includes("localhost");
+console.log(`🔧 Running integration tests against: ${isLocalTest ? "LOCAL" : "REMOTE"} database`);
+
+// Test safety: Add prefix for test data to avoid conflicts
+const TEST_USER_PREFIX = isLocalTest ? "test_" : "integration_test_";
+
+
 const testClient = createClient(
-  Deno.env.get("SUPABASE_URL") || "https://test.supabase.co",
-  Deno.env.get("SUPABASE_ANON_KEY") || "test-key",
+  supabaseUrl || "https://test.supabase.co",
+  supabaseKey || "test-key",
 );
 
 // Test data cleanup helper
@@ -26,7 +41,7 @@ async function cleanupTestData() {
       "id",
       "00000000-0000-0000-0000-000000000000",
     );
-    await testClient.from("users").delete().lt("id", 1000000); // Only test users
+    await testClient.from("users").delete().gt("id", 1000000000); // Only test users with large IDs
   } catch (error) {
     console.warn(
       "Cleanup warning:",
@@ -38,32 +53,32 @@ async function cleanupTestData() {
 Deno.test("Integration: Database Schema - Users table structure", async () => {
   await cleanupTestData();
 
-  const testUserId = 123456;
+  const testUserId = Date.now() + Math.floor(Math.random() * 1000); // Generate unique ID
   const { data, error } = await testClient
     .from("users")
     .insert({
-      telegram_user_id: testUserId,
-      username: "testuser",
-      display_name: "Test User",
+      id: testUserId, // Use 'id' not 'telegram_user_id'
+      username: `${TEST_USER_PREFIX}user`,
+      // Remove display_name - doesn't exist in schema
     })
     .select()
     .single();
 
   assertEquals(error, null, `Database error: ${error?.message}`);
   assertExists(data);
-  assertEquals(data.telegram_user_id, testUserId);
-  assertEquals(data.username, "testuser");
-  assertEquals(data.total_links_generated, 0); // Default value
-  assertExists(data.created_at); // Auto-generated timestamp
+  assertEquals(data.id, testUserId);
+  assertEquals(data.username, `${TEST_USER_PREFIX}user`);
+  assertEquals(data.link_count, 0); // Default value from actual schema
+  assertExists(data.first_seen); // Auto-generated timestamp in actual schema
 
   // Cleanup
-  await testClient.from("users").delete().eq("telegram_user_id", testUserId);
+  await testClient.from("users").delete().eq("id", testUserId);
 });
 
 Deno.test("Integration: Database Schema - Merchants table access", async () => {
   const { data, error } = await testClient
     .from("merchants")
-    .select("merchant_name, affiliate_link_template, max_miles_rate")
+    .select("merchant_name, tracking_link, base_mpd") // Use actual column names
     .limit(5);
 
   assertEquals(error, null, `Database error: ${error?.message}`);
@@ -73,24 +88,33 @@ Deno.test("Integration: Database Schema - Merchants table access", async () => {
   // Validate merchant structure
   const merchant = data[0];
   assertExists(merchant.merchant_name);
-  assertExists(merchant.affiliate_link_template);
-  assert(typeof merchant.max_miles_rate === "number");
-  assert(merchant.max_miles_rate > 0, "Max miles rate should be positive");
+  assertExists(merchant.tracking_link); // Use actual column name
+  assert(typeof merchant.base_mpd === "number"); // Use actual column name
+  assert(merchant.base_mpd > 0, "Base MPD should be positive");
 });
 
 Deno.test("Integration: Database Schema - Link generations tracking", async () => {
   await cleanupTestData();
 
-  const testUserId = 654321;
-  const merchantName = "Test Merchant";
+  const testUserId = 6543210987;
+  
+  // Create a test merchant first
+  const merchantSlug = "integration-test-merchant";
+  await testClient
+    .from("merchants")
+    .insert({
+      merchant_slug: merchantSlug,
+      merchant_name: "Integration Test Merchant", 
+      tracking_link: "https://test.example.com/?ref={user_id}",
+      base_mpd: 5.0,
+    });
 
   // First create a user
   await testClient
     .from("users")
     .insert({
-      telegram_user_id: testUserId,
-      username: "linktest",
-      display_name: "Link Test User",
+      id: testUserId, // Use 'id' not 'telegram_user_id'
+      username: `${TEST_USER_PREFIX}linktest`,
     });
 
   // Then create a link generation
@@ -98,8 +122,8 @@ Deno.test("Integration: Database Schema - Link generations tracking", async () =
     .from("link_generations")
     .insert({
       user_id: testUserId,
-      merchant_name: merchantName,
-      generated_link: "https://test.example.com/affiliate?user=654321",
+      merchant_slug: merchantSlug, // Use merchant_slug not merchant_name
+      unique_link: "https://test.example.com/affiliate?user=654321", // Use unique_link not generated_link
       utm_source: "telegram",
     })
     .select()
@@ -108,8 +132,8 @@ Deno.test("Integration: Database Schema - Link generations tracking", async () =
   assertEquals(error, null, `Database error: ${error?.message}`);
   assertExists(data);
   assertEquals(data.user_id, testUserId);
-  assertEquals(data.merchant_name, merchantName);
-  assertExists(data.created_at);
+  assertEquals(data.merchant_slug, merchantSlug); // Use merchant_slug
+  assertExists(data.generated_at); // Use generated_at not created_at
 
   // Cleanup
   await cleanupTestData();
@@ -118,21 +142,29 @@ Deno.test("Integration: Database Schema - Link generations tracking", async () =
 Deno.test("Integration: Database Schema - Viral interactions tracking", async () => {
   await cleanupTestData();
 
-  const originalUserId = 111111;
-  const viralUserId = 222222;
-  const merchantName = "Viral Test Merchant";
+  const originalUserId = 1111110987;
+  const viralUserId = 2222220987;
+  
+  // Create a test merchant first
+  const merchantSlug = "integration-viral-test-merchant";
+  await testClient
+    .from("merchants")
+    .insert({
+      merchant_slug: merchantSlug,
+      merchant_name: "Integration Viral Test Merchant",
+      tracking_link: "https://viral-test.example.com/?ref={user_id}",
+      base_mpd: 3.0,
+    });
 
   // Create users first
   await testClient.from("users").insert([
     {
-      telegram_user_id: originalUserId,
-      username: "original",
-      display_name: "Original User",
+      id: originalUserId, // Use 'id' not 'telegram_user_id'
+      username: `${TEST_USER_PREFIX}original`,
     },
     {
-      telegram_user_id: viralUserId,
-      username: "viral",
-      display_name: "Viral User",
+      id: viralUserId, // Use 'id' not 'telegram_user_id'
+      username: `${TEST_USER_PREFIX}viral`,
     },
   ]);
 
@@ -142,8 +174,8 @@ Deno.test("Integration: Database Schema - Viral interactions tracking", async ()
     .insert({
       original_user_id: originalUserId,
       viral_user_id: viralUserId,
-      merchant_name: merchantName,
-      interaction_type: "button_click",
+      merchant_slug: merchantSlug, // Use merchant_slug not merchant_name
+      interaction_type: "callback_query", // Use actual default value
     })
     .select()
     .single();
@@ -152,7 +184,7 @@ Deno.test("Integration: Database Schema - Viral interactions tracking", async ()
   assertExists(data);
   assertEquals(data.original_user_id, originalUserId);
   assertEquals(data.viral_user_id, viralUserId);
-  assertEquals(data.merchant_name, merchantName);
+  assertEquals(data.merchant_slug, merchantSlug); // Use merchant_slug
 
   // Cleanup
   await cleanupTestData();
@@ -203,14 +235,14 @@ Deno.test("Integration: Database Schema - Foreign key constraints", async () => 
   await cleanupTestData();
 
   // Test foreign key constraint between link_generations and users
-  const nonExistentUserId = 999999;
+  const nonExistentUserId = 9999990987;
 
   const { error } = await testClient
     .from("link_generations")
     .insert({
       user_id: nonExistentUserId, // Non-existent user
-      merchant_name: "test-merchant",
-      generated_link: "https://test.example.com",
+      merchant_slug: "test-merchant", // Use merchant_slug
+      unique_link: "https://test.example.com", // Use unique_link
       utm_source: "telegram",
     });
 
@@ -222,13 +254,12 @@ Deno.test("Integration: Database Schema - Foreign key constraints", async () => 
 Deno.test("Integration: Database Analytics - User statistics aggregation", async () => {
   await cleanupTestData();
 
-  const testUserId = 333333;
+  const testUserId = 3333330987;
 
   // Create user
   await testClient.from("users").insert({
-    telegram_user_id: testUserId,
-    username: "analytics",
-    display_name: "Analytics User",
+    id: testUserId, // Use 'id' not 'telegram_user_id'
+    username: `${TEST_USER_PREFIX}analytics`,
   });
 
   // Create multiple link generations
@@ -237,8 +268,8 @@ Deno.test("Integration: Database Analytics - User statistics aggregation", async
     linkPromises.push(
       testClient.from("link_generations").insert({
         user_id: testUserId,
-        merchant_name: `Test Merchant ${i + 1}`,
-        generated_link: `https://test${i + 1}.example.com`,
+        merchant_slug: `test-merchant-${i + 1}`, // Use merchant_slug
+        unique_link: `https://test${i + 1}.example.com`, // Use unique_link
         utm_source: "telegram",
       }),
     );
