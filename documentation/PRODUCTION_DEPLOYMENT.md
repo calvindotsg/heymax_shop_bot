@@ -1,7 +1,7 @@
 # HeyMax Shop Bot - Production Deployment
 
 ## Deployment Information
-- **Deployed**: Fri 29 Aug 2025 09:59:41 +08
+- **Deployed**: Fri 29 Aug 2025 10:16:25 +08
 - **Project ID**: dajqynmonepfnccepdmi
 - **Edge Function URL**: https://dajqynmonepfnccepdmi.supabase.co/functions/v1/telegram-bot
 - **Analytics URL**: https://dajqynmonepfnccepdmi.supabase.co/functions/v1/telegram-bot/analytics

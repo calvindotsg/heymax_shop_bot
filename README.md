@@ -2,7 +2,7 @@
 
 > Telegram inline bot that transforms group chats into Max Miles earning opportunities through viral social commerce.
 
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen)](https://github.com/heymax/heymax_shop_bot)
+[![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen)](https://github.com/calvindotsg/heymax_shop_bot)
 [![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen)](#testing)
 [![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](#testing)
 [![Supabase](https://img.shields.io/badge/platform-Supabase%20Edge%20Functions-blue)](https://supabase.com)
@@ -55,28 +55,14 @@ HeyMax Shop Bot is a production-ready Telegram inline bot that enables users to 
 
 ```bash
 # Clone repository
-git clone https://github.com/heymax/heymax_shop_bot.git
+git clone https://github.com/calvindotsg/heymax_shop_bot.git
 cd heymax_shop_bot
 
-# Setup local Supabase
-npm run setup:local
-
-# Initialize database
-npm run db:migrate
+# Start Supabase local instance (requires Docker desktop)
+supabase start
 ```
 
-### 2. Configuration
-
-Create environment variables:
-
-```bash
-# Required for production deployment
-export TELEGRAM_BOT_TOKEN="your_bot_token_here"
-export PRODUCTION_PROJECT_ID="your_supabase_project_id"
-export SUPABASE_ANON_KEY="your_supabase_anon_key"
-```
-
-### 3. Development & Testing
+### 2. Development & Testing
 
 ```bash
 # Run tests (43 test cases)
@@ -89,7 +75,7 @@ npm run tdd:start
 npm run test:performance
 ```
 
-### 4. Production Deployment
+### 3. Production Deployment
 
 ```bash
 # Deploy to production (requires environment variables)
@@ -309,8 +295,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Community
 - **Telegram Community**: [HeyMax Community](https://t.me/+gNZRwXXy9Gc1MzJl) (11K+ members)
-- **Issues**: [GitHub Issues](https://github.com/heymax/heymax_shop_bot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/heymax/heymax_shop_bot/discussions)
+- **Issues**: [GitHub Issues](https://github.com/calvindotsg/heymax_shop_bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/calvindotsg/heymax_shop_bot/discussions)
 
 ### Commercial Support  
 For enterprise deployment and custom features:
@@ -322,4 +308,4 @@ For enterprise deployment and custom features:
 
 **Built with ❤️ by the HeyMax Team** | **Transforming Group Chats into Earning Opportunities**
 
-*Ready to earn Max Miles? Start with: `@heymax_shop_bot pelago`* 🚀
+*Ready to earn Max Miles? Start with: `@heymax_shop_bot amazon`* 🚀

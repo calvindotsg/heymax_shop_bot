@@ -18,7 +18,8 @@ on:
 
 env:
   DENO_VERSION: v1.30.0
-  SUPABASE_VERSION: 1.27.7
+  # Supabase CLI npm package name is 'supabase'.
+  SUPABASE_VERSION: 1.98.1
   MIN_COVERAGE_OVERALL: 80
   MIN_COVERAGE_CRITICAL: 90
   MAX_TEST_DURATION_SECONDS: 30
@@ -57,7 +58,8 @@ jobs:
 
       - name: Install Supabase CLI
         run: |
-          npm install -g @supabase/cli@${{ env.SUPABASE_VERSION }}
+          echo "Installing Supabase CLI $SUPABASE_VERSION"
+          npm install -g supabase@${{ env.SUPABASE_VERSION }}
           supabase --version
 
       - name: Validate project structure
@@ -224,7 +226,7 @@ jobs:
           echo "✅ Coverage requirements met: $COVERAGE%"
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unit-test-coverage
           path: |
@@ -271,7 +273,9 @@ jobs:
           deno-version: ${{ env.DENO_VERSION }}
 
       - name: Install Supabase CLI
-        run: npm install -g @supabase/cli@${{ env.SUPABASE_VERSION }}
+        run: |
+          npm install -g supabase@${{ env.SUPABASE_VERSION }}
+          supabase --version
 
       - name: Start Supabase local development
         run: |
@@ -317,7 +321,7 @@ jobs:
           deno coverage integration-coverage/ --lcov > integration-coverage/lcov.info
 
       - name: Upload integration coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-coverage
           path: integration-coverage/
@@ -413,7 +417,7 @@ jobs:
           echo "✅ Performance requirements met"
 
       - name: Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-test-results
           path: performance-results/
@@ -475,7 +479,9 @@ jobs:
           deno-version: ${{ env.DENO_VERSION }}
 
       - name: Install Supabase CLI
-        run: npm install -g @supabase/cli@${{ env.SUPABASE_VERSION }}
+        run: |
+          npm install -g supabase@${{ env.SUPABASE_VERSION }}
+          supabase --version
 
       - name: Build edge function
         run: |
@@ -525,7 +531,7 @@ jobs:
     
     steps:
       - name: Download coverage reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ./artifacts
 
@@ -601,7 +607,7 @@ jobs:
           EOF
 
       - name: Upload quality report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: quality-report
           path: quality-report.md
@@ -620,7 +626,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Supabase CLI
-        run: npm install -g @supabase/cli@${{ env.SUPABASE_VERSION }}
+        run: |
+          npm install -g supabase@${{ env.SUPABASE_VERSION }}
+          supabase --version
 
       - name: Deploy to staging
         env:

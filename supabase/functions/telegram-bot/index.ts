@@ -202,12 +202,12 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
         type: "article",
         id: "no_results",
         title: `❌ No merchants found for "${searchTerm}"`,
-        description: "Try popular brands: amazon, grab, klook, lazada, foodpanda",
+        description: "Try popular brands: amazon, trip.com, klook, lazada, foodpanda",
         input_message_content: {
           message_text: `🔍 No merchants found for "${searchTerm}"
 
 ` +
-                       `💡 Try popular merchants: amazon, grab, klook, lazada, foodpanda
+                       `💡 Try popular merchants: amazon, trip.com, klook, lazada, foodpanda
 
 ` +
                        `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name to discover earning opportunities!
@@ -263,7 +263,7 @@ async function handleInlineQuery(query: TelegramInlineQuery) {
 ` +
                      `Please try again in a moment, or search for popular merchants like:
 ` +
-                     `• amazon • grab • klook • lazada • foodpanda
+                     `• amazon • trip.com • klook • lazada • foodpanda
 
 ` +
                      `🔧 If the issue persists, our team has been notified.
@@ -396,7 +396,7 @@ async function generatePopularMerchantResults(userId: number, username: string):
                      `Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) followed by a merchant name
 
 ` +
-                     `🛍️ **Popular merchants:** amazon, grab, klook, lazada, foodpanda
+                     `🛍️ **Popular merchants:** amazon, trip.com, klook, lazada, foodpanda
 
 ` +
                      `⚡ Generate personalized earning links instantly!
@@ -489,7 +489,7 @@ async function generateEnhancedBotResponse(userId: number, username: string, mer
          `⚡ **Others**: Tap "Get MY Link" to earn Max Miles at ${merchant.merchant_name} too!
 
 ` +
-         `💡 **Discover more**: Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon, grab, klook...
+         `💡 **Discover more**: Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon, trip.com, klook...
 
 ` +
          `📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
@@ -667,7 +667,7 @@ async function handleStartCommand(message: TelegramMessage) {
 
 🎪 **Add me to group chats** so everyone can discover earning opportunities together!
 
-**Quick start:** Type [@${BOT_USERNAME}](${BOT_DEEP_LINK}) pelago to try it now! 🛍️
+**Quick start:** Type this to try it now 🛍️ [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon
 
 Need more help? Send /help anytime.
 
@@ -705,7 +705,7 @@ async function handleHelpCommand(message: TelegramMessage) {
 
 **📊 Stats:** You can see viral growth analytics in group chats where I'm active.
 
-Ready to earn? Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon right now! 🚀
+Ready to earn? Try [@${BOT_USERNAME}](${BOT_DEEP_LINK}) amazon
 
 📋 **More details & terms**: https://heymax.ai`;
 
@@ -774,7 +774,7 @@ async function generateViralBotResponse(userId: number, username: string, mercha
 
 💡 **Keep the viral loop going**: Share [@${BOT_USERNAME}](${BOT_DEEP_LINK}) with friends and groups!
 
-Try more: [@${BOT_USERNAME}](${BOT_DEEP_LINK}) klook, pelago, grab...
+Try more: [@${BOT_USERNAME}](${BOT_DEEP_LINK}) klook, amazon, trip.com...
 
 📋 **More details & terms**: https://heymax.ai/merchant/${encodeURIComponent(merchant.merchant_name)}`;
 }
