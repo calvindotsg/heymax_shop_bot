@@ -247,7 +247,15 @@ export function generateInlineQueryResult(
   title: string,
   description: string,
   message_text: string,
-  reply_markup?: any,
+  reply_markup?: {
+    inline_keyboard: Array<
+      Array<{
+        text: string;
+        url?: string;
+        callback_data?: string;
+      }>
+    >;
+  },
 ): TelegramInlineQueryResult {
   return {
     type: "article",

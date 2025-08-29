@@ -6,16 +6,9 @@ import {
 
 import {
   calculateMatchScore,
-  countCommonChars,
   generateAffiliateLink,
-  generateEnhancedBotResponse,
-  generateInlineQueryResult,
-  generateViralKeyboard,
-  type Merchant,
-  MOCK_MERCHANTS,
   type TelegramInlineQuery,
   validateInlineQueryStructure,
-  validateUserUpsertData,
 } from "../../src/utils/bot-functions.ts";
 
 // TDD Tests for Telegram Bot Edge Function
