@@ -8,19 +8,6 @@ const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
   "http://localhost:54321";
 const supabaseKey: string = Deno.env.get("SUPABASE_ANON_KEY") ?? "test_key";
 
-// Helper function to check if Supabase is available
-async function isSupabaseAvailable(): Promise<boolean> {
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: "GET",
-      headers: { "apikey": supabaseKey },
-    });
-    return response.status < 500;
-  } catch {
-    return false;
-  }
-}
-
 // Helper function to check if Edge Function is available
 async function isEdgeFunctionAvailable(): Promise<boolean> {
   try {
