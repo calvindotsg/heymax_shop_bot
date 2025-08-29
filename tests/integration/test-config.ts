@@ -52,13 +52,14 @@ export interface TestMetrics {
   totalTests: number;
   passedTests: number;
   failedTests: number;
+  skippedTests: number;
   totalDuration: number;
   averageDuration: number;
   coveragePercentage?: number;
 }
 
 export interface TestResult {
-  status: "passed" | "failed";
+  status: "passed" | "failed" | "skipped";
   duration?: number;
 }
 
@@ -66,6 +67,7 @@ export function calculateTestMetrics(results: TestResult[]): TestMetrics {
   const totalTests = results.length;
   const passedTests = results.filter((r) => r.status === "passed").length;
   const failedTests = results.filter((r) => r.status === "failed").length;
+  const skippedTests = results.filter((r) => r.status === "skipped").length;
   const durations = results.map((r) => r.duration || 0);
   const totalDuration = durations.reduce((sum, d) => sum + d, 0);
   const averageDuration = totalDuration / totalTests;
@@ -74,6 +76,7 @@ export function calculateTestMetrics(results: TestResult[]): TestMetrics {
     totalTests,
     passedTests,
     failedTests,
+    skippedTests,
     totalDuration,
     averageDuration,
   };
@@ -86,6 +89,11 @@ export function logTestResults(metrics: TestMetrics): void {
   console.log(
     `   Failed: ${metrics.failedTests} ${
       metrics.failedTests > 0 ? "❌" : "✅"
+    }`,
+  );
+  console.log(
+    `   Skipped: ${metrics.skippedTests} ${
+      metrics.skippedTests > 0 ? "⚠️" : "ℹ️"
     }`,
   );
   console.log(`   Total Duration: ${metrics.totalDuration.toFixed(0)}ms`);
@@ -116,7 +124,7 @@ export async function cleanupAllTestData(): Promise<void> {
 
     console.log("🧹 Test data cleanup completed");
   } catch (error) {
-    console.warn("⚠️ Test data cleanup warning:", error.message);
+    console.warn("⚠️ Test data cleanup warning:", error instanceof Error ? error.message : String(error));
   }
 }
 

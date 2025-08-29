@@ -88,7 +88,7 @@ Deno.test("Integration: Telegram API - Webhook URL validation", async () => {
         "Webhook endpoint should be accessible",
       );
     } catch (error) {
-      console.warn(`⚠️ Webhook accessibility test failed: ${error.message}`);
+      console.warn(`⚠️ Webhook accessibility test failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 });
@@ -239,12 +239,22 @@ Deno.test("Integration: Telegram API - Answer inline query format", () => {
   const viralButton = keyboard[1][0];
 
   assertExists(shopButton.text);
-  assertExists(shopButton.url);
-  assert(shopButton.url.startsWith("https://"));
+  // Type guard for URL button
+  if ('url' in shopButton) {
+    assertExists(shopButton.url);
+    assert(shopButton.url.startsWith("https://"));
+  } else {
+    throw new Error("Shop button should be a URL button");
+  }
 
   assertExists(viralButton.text);
-  assertExists(viralButton.callback_data);
-  assert(viralButton.callback_data.includes("generate:"));
+  // Type guard for callback data button
+  if ('callback_data' in viralButton) {
+    assertExists(viralButton.callback_data);
+    assert(viralButton.callback_data.includes("generate:"));
+  } else {
+    throw new Error("Viral button should be a callback button");
+  }
 
   console.log("✅ Inline query response structure validation passed");
 });

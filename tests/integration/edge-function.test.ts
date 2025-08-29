@@ -348,7 +348,7 @@ Deno.test("Integration: Edge Function - Health check capability", async () => {
       console.log(`ℹ️ No health check endpoint (${healthResponse.status})`);
     }
   } catch (error) {
-    console.log(`ℹ️ Health check not available: ${error.message}`);
+    console.log(`ℹ️ Health check not available: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // This test always passes - health check is optional
