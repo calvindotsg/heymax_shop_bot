@@ -9,16 +9,17 @@ import {
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Test configuration
+const supabaseUrl: string = Deno.env.get("SUPABASE_URL") || "https://test.supabase.co";
+const SUPABASE_ANON_KEY: string = Deno.env.get("SUPABASE_ANON_KEY") || "test-key";
+
 const testClient = createClient(
-  Deno.env.get("SUPABASE_URL") || "https://test.supabase.co",
-  Deno.env.get("SUPABASE_ANON_KEY") || "test-key",
+  supabaseUrl || "https://test.supabase.co",
+  SUPABASE_ANON_KEY || "test-key",
 );
 
-const EDGE_FUNCTION_URL = Deno.env.get("SUPABASE_URL")
-  ? `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-bot`
+const EDGE_FUNCTION_URL = supabaseUrl
+  ? `${supabaseUrl}/functions/v1/telegram-bot`
   : "http://localhost:54321/functions/v1/telegram-bot";
-
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "test-key";
 
 // Helper functions
 async function callEdgeFunction(payload: unknown) {
