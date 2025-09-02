@@ -2,10 +2,6 @@
 
 > **Production-Ready MVP**: Telegram inline bot that transforms group chats into Max Miles earning opportunities through viral social commerce.
 
-[![TDD Pipeline](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml/badge.svg)](https://github.com/calvindotsg/heymax_shop_bot/actions/workflows/tdd-pipeline.yml)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)]()
-[![Deployment](https://img.shields.io/badge/status-production%20ready-success)]()
 [![Supabase](https://img.shields.io/badge/platform-Supabase%20Edge%20Functions-blue)](https://supabase.com)
 
 ## 🚀 What is HeyMax Shop Bot?
