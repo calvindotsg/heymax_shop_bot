@@ -5,9 +5,7 @@
   "scripts": {
     "test": "deno test --allow-all tests/",
     "test:unit": "deno test --allow-all tests/unit/",
-    "test:integration": "deno run --allow-all tests/integration/run-tests.ts",
-    "test:integration:quick": "deno test --allow-all tests/integration/",
-    "test:performance": "deno test --allow-all tests/performance/",
+
     "test:coverage": "deno test --allow-all --coverage=coverage/ tests/",
     "test:watch": "deno test --allow-all --watch tests/",
     "setup:local": "supabase start",
@@ -15,7 +13,7 @@
     "db:reset": "supabase db reset --local", 
     "functions:serve": "supabase functions serve",
     "functions:deploy": "supabase functions deploy telegram-bot",
-    "pipeline": "npm run test:unit && npm run test:integration && npm run test:performance",
+    "pipeline": "npm test && npm run validate",
     "validate": "deno fmt --check && deno lint && deno check supabase/functions/telegram-bot/index.ts"
   },
   "keywords": [

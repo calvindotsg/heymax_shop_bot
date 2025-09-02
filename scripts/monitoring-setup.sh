@@ -35,7 +35,7 @@ Optional Options:
   -t, --token BOT_TOKEN        Telegram bot token for webhook monitoring
   -e, --email ALERT_EMAIL      Email address for alerts
   -i, --interval MINUTES       Monitoring interval in minutes (default: 5)
-  --no-performance            Skip performance testing setup
+
   --no-dashboard              Skip dashboard creation
   --non-interactive           Run without prompting for input
   -v, --verbose               Enable verbose logging
@@ -50,7 +50,7 @@ Environment Variables (alternative to options):
 Examples:
   $0 --url https://abc123.supabase.co/functions/v1/telegram-bot
   $0 -u https://abc123.supabase.co/functions/v1/telegram-bot -t 123456:ABC-DEF -e admin@example.com
-  $0 --url https://abc123.supabase.co/functions/v1/telegram-bot --interval 10 --no-performance
+  $0 --url https://abc123.supabase.co/functions/v1/telegram-bot --interval 10
   $0 --url https://abc123.supabase.co/functions/v1/telegram-bot --non-interactive
 
 EOF
@@ -76,7 +76,7 @@ parse_args() {
                 MONITORING_INTERVAL="$2"
                 shift 2
                 ;;
-            --no-performance)
+            )
                 SKIP_PERFORMANCE_SETUP=true
                 shift
                 ;;
@@ -526,9 +526,9 @@ main() {
     fi
     
     if [[ "$SKIP_PERFORMANCE_SETUP" != "true" ]]; then
-        setup_performance_testing
+
     else
-        print_status "Skipping performance setup (--no-performance flag used)"
+
     fi
     
     echo ""
