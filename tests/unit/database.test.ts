@@ -1,5 +1,6 @@
 import { assertEquals } from "testing/asserts.ts";
 import { createClient } from "@supabase/supabase-js";
+import "jsr:@std/dotenv/load";
 
 // Test configuration
 const supabaseUrl: string = Deno.env.get("SUPABASE_URL") ??
