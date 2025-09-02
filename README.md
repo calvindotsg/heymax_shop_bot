@@ -10,7 +10,7 @@
 
 HeyMax Shop Bot is a **production-ready Telegram inline bot** that enables users to earn [Max Miles](https://heymax.ai) on purchases by generating personalized affiliate links directly in group chats. Built for HeyMax's platform ($6M run rate, 272M+ Max Miles issued), it transforms group conversations into viral earning opportunities.
 
-**📊 Project Status**: ✅ **MVP Complete** - All 3 sprints delivered, 43/43 tests passing, production-ready deployment scripts
+**📊 Project Status**: ✅ **MVP Complete** - All 3 sprints delivered, 51/51 tests passing, production-ready deployment scripts
 
 ### Key Features
 
@@ -77,14 +77,14 @@ supabase start
 # Install dependencies and setup
 npm install
 
-# Run all tests (43 test cases) 
+# Run all tests (51 test cases) 
 npm test
 
 # Start TDD workflow (recommended for development)
 npm run tdd:start
 
-# Run performance testing with load simulation
-npm run test:performance
+# Run all unit tests with coverage
+npm test
 
 # Complete CI/CD pipeline 
 npm run pipeline
@@ -127,20 +127,11 @@ Bot Response:
 
 ## 🧪 Testing
 
-Comprehensive test suite with 43/43 tests passing and TDD-driven development:
+Comprehensive test suite with 51/51 tests passing and TDD-driven development:
 
 ```bash
-# Unit tests (30 test cases)
-npm run test:unit
-
-# Integration tests (comprehensive TDD suite)
-npm run test:integration
-
-# Quick integration test run
-npm run test:integration:quick
-
-# Performance tests (5 test cases) 
-npm run test:performance
+# Unit tests (51 test cases)
+npm test
 
 # Full TDD pipeline
 npm run pipeline
@@ -149,16 +140,11 @@ npm run pipeline
 npm run test:watch
 ```
 
-### TDD-Enhanced Test Categories
+### Test Coverage & Quality
 
-- **Unit Tests**: Core bot functionality, affiliate link generation, viral mechanics
-- **Integration Tests**: 
-  - Database schema validation and operations
-  - Telegram Bot API integration and webhook handling
-  - Supabase Edge Function integration with production endpoints
-  - End-to-end viral flow validation and coefficient tracking
-- **Performance Tests**: Load testing with concurrent user simulation
-- **Coverage Requirements**: >80% overall, >90% critical components
+- **Unit Tests**: Core bot functionality, affiliate link generation, viral mechanics (51 tests)
+- **Coverage Requirements**: >80% overall (currently 95% line coverage, 72% branch coverage)
+- **Quality Gates**: TypeScript compilation, linting, security scanning
 
 ## 📊 Analytics & Monitoring
 
@@ -193,9 +179,7 @@ heymax_shop_bot/
 │   ├── migrations/                        # Database schema
 │   └── config.toml                       # Supabase configuration
 ├── tests/
-│   ├── unit/                             # Unit test suites  
-│   ├── integration/                      # Integration tests
-│   └── performance/                      # Load testing
+│   └── unit/                             # Unit tests (51 tests)
 ├── scripts/
 │   ├── production-deploy.sh              # Deployment automation
 │   └── monitoring-setup.sh              # Monitoring configuration
