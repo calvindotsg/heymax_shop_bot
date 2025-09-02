@@ -957,7 +957,6 @@ async function getAnalyticsSummary() {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const _oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Get user metrics
     const { count: totalUsersCount } = await supabase
@@ -1089,136 +1088,7 @@ async function getAnalyticsSummary() {
   }
 }
 
-// Monitor function invocation limits for free tier
-async function _checkFunctionInvocationLimits() {
-  try {
-    // This would integrate with Supabase monitoring APIs in production
-    // For now, we'll track basic metrics
-    const { count: recentInvocationsCount } = await supabase
-      .from("link_generations")
-      .select("*", { count: "exact", head: true })
-      .gte(
-        "generated_at",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      );
-
-    const monthlyInvocations = (recentInvocationsCount || 0) * 2; // Rough estimate
-    const freetierLimit = 500000; // Supabase free tier limit
-    const usagePercentage = (monthlyInvocations / freetierLimit) * 100;
-
-    return {
-      monthly_invocations: monthlyInvocations,
-      free_tier_limit: freetierLimit,
-      usage_percentage: Math.round(usagePercentage * 100) / 100,
-      warning_threshold_reached: usagePercentage > 80,
-      critical_threshold_reached: usagePercentage > 95,
-    };
-  } catch (error) {
-    console.error("Error checking function limits:", error);
-    return {
-      error: "Failed to check limits",
-      warning_threshold_reached: false,
-      critical_threshold_reached: false,
-    };
-  }
-}
-
-// Real-time viral coefficient monitoring
-async function _getViralCoefficientTrend(days: number = 7) {
-  try {
-    const dailyCoefficients: Array<{
-      date: string;
-      coefficient: number;
-      users: number;
-      viral_interactions: number;
-    }> = [];
-
-    for (let i = days - 1; i >= 0; i--) {
-      const dayStart = new Date();
-      dayStart.setDate(dayStart.getDate() - i);
-      dayStart.setHours(0, 0, 0, 0);
-
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      // Get daily users
-      const { count: dailyUsersCount } = await supabase
-        .from("users")
-        .select("*", { count: "exact", head: true })
-        .lte("first_seen", dayEnd.toISOString())
-        .gte("last_activity", dayStart.toISOString());
-
-      // Get daily viral interactions
-      const { count: dailyViralCount } = await supabase
-        .from("viral_interactions")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", dayStart.toISOString())
-        .lt("created_at", dayEnd.toISOString());
-
-      const coefficient = (dailyUsersCount || 0) > 0
-        ? (dailyViralCount || 0) / (dailyUsersCount || 1)
-        : 0;
-
-      dailyCoefficients.push({
-        date: dayStart.toISOString().split("T")[0],
-        coefficient: Math.round(coefficient * 100) / 100,
-        users: dailyUsersCount || 0,
-        viral_interactions: dailyViralCount || 0,
-      });
-    }
-
-    return dailyCoefficients;
-  } catch (error) {
-    console.error("Error calculating viral coefficient trend:", error);
-    return [];
-  }
-}
-
-// Performance monitoring for load testing
-async function _getPerformanceMetrics() {
-  try {
-    // In production, this would integrate with monitoring tools
-    // For MVP, we'll return basic metrics
-    const { data: recentQueries } = await supabase
-      .from("search_analytics")
-      .select("response_time_ms")
-      .gte(
-        "query_timestamp",
-        new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      )
-      .not("response_time_ms", "is", null);
-
-    const responseTimes = recentQueries?.map((q) => q.response_time_ms || 0) ||
-      [];
-    const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((sum, time) => sum + time, 0) /
-        responseTimes.length
-      : 0;
-
-    const p95ResponseTime = responseTimes.length > 0
-      ? responseTimes.sort((a, b) =>
-        a - b
-      )[Math.floor(responseTimes.length * 0.95)]
-      : 0;
-
-    return {
-      avg_response_time_ms: Math.round(avgResponseTime),
-      p95_response_time_ms: Math.round(p95ResponseTime),
-      total_requests_1h: responseTimes.length,
-      performance_target_met: avgResponseTime < 1000, // <1s target
-      health_status: avgResponseTime < 1000 ? "healthy" : "degraded",
-    };
-  } catch (error) {
-    console.error("Error getting performance metrics:", error);
-    return {
-      error: "Failed to get performance metrics",
-      health_status: "unknown",
-    };
-  }
-}
-
 // Telegram API Operations
-
 async function sendInlineQueryAnswer(
   queryId: string,
   results: TelegramInlineQueryResult[],
