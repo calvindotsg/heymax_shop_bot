@@ -12,7 +12,7 @@ affiliate links directly in group chats, creating viral earning opportunities.
 The bot is built with Supabase Edge Functions (Deno/TypeScript) and serves 187+
 Singapore merchants.
 
-**Key Stats**: 43/43 tests passing, 90% coverage, production-ready MVP deployed
+**Key Stats**: 51/51 tests passing, 95% coverage, production-ready MVP deployed
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Singapore merchants.
 - **Database Schema**: PostgreSQL with users, merchants, link_generations,
   viral_interactions
 - **Testing Framework**: Deno native testing with
-  unit/integration/performance/e2e suites
+  comprehensive unit test suite
 - **Deployment**: Automated Bash scripts with monitoring and validation
 
 ## File Structure & Key Locations
@@ -48,10 +48,7 @@ heymax_shop_bot/
 │   ├── config.toml                       # Supabase configuration
 │   └── seed.sql                          # Merchant data seeding
 ├── tests/
-│   ├── unit/                             # 30 unit tests
-│   ├── integration/                      # 8 integration tests
-│   ├── performance/                      # 5 performance tests
-│   └── e2e/                             # End-to-end tests
+│   └── unit/                             # 51 unit tests
 ├── scripts/
 │   ├── production-deploy.sh              # Main deployment script
 │   ├── extract_affiliation_fields_sg.py # Merchant data extraction
@@ -76,16 +73,15 @@ npm run db:reset            # Reset database with seed data
 supabase db reset           # Alternative reset command
 
 # Testing (TDD Approach - CRITICAL for development)
-npm test                    # Run all 43 tests
+npm test                    # Run all 51 tests
 npm run test:watch          # TDD watch mode (recommended for development)
 npm run test:coverage       # Coverage reporting
-npm run test:performance    # Load testing with Artillery
 npm run pipeline            # Full CI/CD pipeline
 
 # Single test execution
 npm test -- tests/unit/telegram-bot.test.ts           # Core bot tests
-npm test -- tests/integration/database.test.ts        # Database integration
-npm test -- tests/performance/performance-validation.test.ts # Load tests
+npm test -- tests/unit/database.test.ts               # Database unit tests
+npm test -- tests/unit/bot-functions-comprehensive.test.ts # Comprehensive function tests
 
 # Local development server
 supabase functions serve   # Serve Edge Functions locally
@@ -207,18 +203,15 @@ const data = await response.json();
 
 ### Test Categories
 
-- **Unit Tests** (30): Core bot functionality, affiliate link generation, viral
-  mechanics
-- **Integration Tests** (8): Database operations, Telegram API integration
-- **Performance Tests** (5): Load testing with Artillery (100+ concurrent users)
-- **E2E Tests** (5): Complete user journey validation
+- **Unit Tests** (51): Core bot functionality, affiliate link generation, viral mechanics, database operations
+
 
 ### Running Specific Test Suites
 
 ```bash
 npm run test -- tests/unit/telegram-bot.test.ts           # Core bot tests
-npm run test -- tests/integration/database.test.ts        # DB integration
-npm run test -- tests/performance/performance-validation.test.ts # Load tests
+npm test -- tests/unit/telegram-bot-sprint2.test.ts      # Sprint 2 features
+npm test -- tests/unit/telegram-bot-sprint3.test.ts      # Sprint 3 viral mechanics
 ```
 
 ## Configuration Management
@@ -342,8 +335,9 @@ verify_jwt = false  # Required for Telegram webhook access
 
 **Test File Organization:**
 - `tests/unit/telegram-bot*.test.ts` - Core bot functionality tests
-- `tests/integration/database.test.ts` - Database operation tests  
-- `tests/performance/performance-validation.test.ts` - Load testing
+- `tests/unit/database.test.ts` - Database unit tests
+- `tests/unit/telegram-bot-sprint2.test.ts` - Enhanced bot features
+- `tests/unit/telegram-bot-sprint3.test.ts` - Viral mechanics
 
 ### Local Development Pattern
 
@@ -360,7 +354,7 @@ supabase functions serve             # Terminal 3: Function dev server
 **When adding features:**
 1. **Test First**: Add failing test in appropriate test file
 2. **Minimal Implementation**: Add code in `supabase/functions/telegram-bot/index.ts`
-3. **Validate**: Ensure all 43 tests still pass
+3. **Validate**: Ensure all 51 tests still pass
 4. **Database Changes**: Add migration in `supabase/migrations/` if needed
 
 **When debugging:**
