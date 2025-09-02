@@ -1,9 +1,7 @@
 // Bot Utilities Tests - Helper Functions and Algorithms
 // Tests for match scoring, common chars, and utility functions
 
-import {
-  assertEquals,
-} from "testing/asserts.ts";
+import { assertEquals } from "testing/asserts.ts";
 
 import {
   MERCHANTS,
