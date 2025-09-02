@@ -56,14 +56,16 @@ export async function assertDatabasePerformance(maxTimeMs = 1000) {
  * CI environments need more generous timeouts due to network latency and resource constraints
  */
 function getEnvironmentTimeout(providedTimeout?: number): number {
-  const isCI = Deno.env.get("CI") === "true" || Deno.env.get("GITHUB_ACTIONS") === "true";
-  const isLocal = Deno.env.get("ENVIRONMENT") === "local" || supabaseUrl.includes("localhost");
-  
+  const isCI = Deno.env.get("CI") === "true" ||
+    Deno.env.get("GITHUB_ACTIONS") === "true";
+  const isLocal = Deno.env.get("ENVIRONMENT") === "local" ||
+    supabaseUrl.includes("localhost");
+
   // If a specific timeout is provided, use it as base
   if (providedTimeout !== undefined) {
     return isCI ? Math.max(providedTimeout * 2, 1000) : providedTimeout;
   }
-  
+
   // Default timeouts based on environment
   if (isLocal) {
     return 500; // Local development - fast expectations
