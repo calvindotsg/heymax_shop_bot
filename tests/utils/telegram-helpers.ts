@@ -170,7 +170,7 @@ export function assertValidInlineKeyboard(keyboard: unknown, expectedRows = 2) {
         `Row ${rowIndex} should have at least one button`,
       );
 
-      (row as any[]).forEach((button: unknown, buttonIndex: number) => {
+      (row as unknown[]).forEach((button: unknown, buttonIndex: number) => {
         const btn = button as Record<string, unknown>;
         assertExists(
           btn.text,
