@@ -157,35 +157,37 @@ export function assertValidInlineKeyboard(keyboard: unknown, expectedRows = 2) {
     `Should have ${expectedRows} button rows`,
   );
 
-  (kb.inline_keyboard as unknown[][]).forEach((row: unknown[], rowIndex: number) => {
-    assertEquals(
-      Array.isArray(row),
-      true,
-      `Row ${rowIndex} should be an array`,
-    );
-    assertEquals(
-      row.length > 0,
-      true,
-      `Row ${rowIndex} should have at least one button`,
-    );
-
-    (row as any[]).forEach((button: unknown, buttonIndex: number) => {
-      const btn = button as Record<string, unknown>;
-      assertExists(
-        btn.text,
-        `Button ${rowIndex}-${buttonIndex} should have text`,
-      );
-
-      // Button should have either URL or callback_data
-      const hasUrl = "url" in btn;
-      const hasCallback = "callback_data" in btn;
+  (kb.inline_keyboard as unknown[][]).forEach(
+    (row: unknown[], rowIndex: number) => {
       assertEquals(
-        hasUrl || hasCallback,
+        Array.isArray(row),
         true,
-        `Button ${rowIndex}-${buttonIndex} should have URL or callback data`,
+        `Row ${rowIndex} should be an array`,
       );
-    });
-  });
+      assertEquals(
+        row.length > 0,
+        true,
+        `Row ${rowIndex} should have at least one button`,
+      );
+
+      (row as any[]).forEach((button: unknown, buttonIndex: number) => {
+        const btn = button as Record<string, unknown>;
+        assertExists(
+          btn.text,
+          `Button ${rowIndex}-${buttonIndex} should have text`,
+        );
+
+        // Button should have either URL or callback_data
+        const hasUrl = "url" in btn;
+        const hasCallback = "callback_data" in btn;
+        assertEquals(
+          hasUrl || hasCallback,
+          true,
+          `Button ${rowIndex}-${buttonIndex} should have URL or callback data`,
+        );
+      });
+    },
+  );
 }
 
 // UTM parameter validation
