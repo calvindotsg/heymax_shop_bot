@@ -304,6 +304,7 @@ Deno.test("User Data Validation - should validate upsert structure", () => {
 Deno.test("Performance - should maintain fast response times", () => {
   // Test match scoring performance
   const { timeMs: scoringTime } = measurePerformance(() => {
+    let totalScore = 0;
     for (let i = 0; i < 1000; i++) {
       const name = "Amazon Singapore Store".toLowerCase();
       const term = "amazon".toLowerCase();
@@ -313,7 +314,18 @@ Deno.test("Performance - should maintain fast response times", () => {
       if (name === term) score = 1.0;
       else if (name.startsWith(term)) score = 0.9;
       else if (name.includes(term)) score = 0.8;
+      
+      totalScore += score;
     }
+    // Ensure the calculation is actually used to prevent optimization
+    // Use approximate equality to handle floating point precision
+    const expectedScore = 900;
+    const tolerance = 0.001;
+    assertEquals(
+      Math.abs(totalScore - expectedScore) < tolerance,
+      true,
+      `Total score should be approximately ${expectedScore}, got ${totalScore}`
+    );
   });
 
   assertPerformanceBenchmark(
