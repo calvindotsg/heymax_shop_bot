@@ -314,7 +314,7 @@ Deno.test("Performance - should maintain fast response times", () => {
       if (name === term) score = 1.0;
       else if (name.startsWith(term)) score = 0.9;
       else if (name.includes(term)) score = 0.8;
-
+      
       totalScore += score;
     }
     // Ensure the calculation is actually used to prevent optimization
@@ -324,7 +324,7 @@ Deno.test("Performance - should maintain fast response times", () => {
     assertEquals(
       Math.abs(totalScore - expectedScore) < tolerance,
       true,
-      `Total score should be approximately ${expectedScore}, got ${totalScore}`,
+      `Total score should be approximately ${expectedScore}, got ${totalScore}`
     );
   });
 

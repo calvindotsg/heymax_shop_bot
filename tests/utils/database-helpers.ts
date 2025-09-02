@@ -51,6 +51,29 @@ export async function assertDatabasePerformance(maxTimeMs = 1000) {
   return queryTime;
 }
 
+/**
+ * Get environment-aware timeout for database operations
+ * CI environments need more generous timeouts due to network latency and resource constraints
+ */
+function getEnvironmentTimeout(providedTimeout?: number): number {
+  const isCI = Deno.env.get("CI") === "true" || Deno.env.get("GITHUB_ACTIONS") === "true";
+  const isLocal = Deno.env.get("ENVIRONMENT") === "local" || supabaseUrl.includes("localhost");
+  
+  // If a specific timeout is provided, use it as base
+  if (providedTimeout !== undefined) {
+    return isCI ? Math.max(providedTimeout * 2, 1000) : providedTimeout;
+  }
+  
+  // Default timeouts based on environment
+  if (isLocal) {
+    return 500; // Local development - fast expectations
+  } else if (isCI) {
+    return 1500; // CI environment - more generous timeout
+  } else {
+    return 1000; // Default for other environments
+  }
+}
+
 // Test data cleanup helpers
 export async function cleanupTestData(userId: number) {
   try {
@@ -110,16 +133,19 @@ export const EXPECTED_COLUMNS = {
 export async function benchmarkDatabaseOperation<T>(
   operation: () => Promise<T>,
   operationName: string,
-  maxTimeMs = 1000,
+  maxTimeMs?: number,
 ): Promise<T> {
   const startTime = performance.now();
   const result = await operation();
   const timeMs = performance.now() - startTime;
 
+  // Environment-aware timeout defaults
+  const defaultTimeout = getEnvironmentTimeout(maxTimeMs);
+
   assertEquals(
-    timeMs < maxTimeMs,
+    timeMs < defaultTimeout,
     true,
-    `${operationName} should complete in under ${maxTimeMs}ms, got ${timeMs}ms`,
+    `${operationName} should complete in under ${defaultTimeout}ms, got ${timeMs}ms`,
   );
 
   return result;

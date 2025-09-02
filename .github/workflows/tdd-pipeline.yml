@@ -172,6 +172,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
+          CI: true
+          ENVIRONMENT: ci
         run: |
           echo "🧪 Running unit tests with coverage..."
 
